@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# never commit user settings — the Notion token lives here
+feg-settings.json
+feg-projects.json
+
+# media / working files
+*.mov
+*.mp4
+*.wav
+*.mxf
+*.scc
+*.aep
+*.xml
+!test/fixtures/*.xml

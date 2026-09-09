@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Media Distribution Toolkit</title>
+<style>
+  :root {
+    --bg: #14171c; --panel: #1d2129; --panel2: #242a35; --line: #313947;
+    --text: #e8ebef; --dim: #9aa4b2; --accent: #4c8dff;
+    /* pass/warn were measured colorblind-unsafe (protanopia ΔE 5.2, below the 8
+       safety target) — replaced with a validated pair (ΔE 11.3+) that also holds
+       WCAG AA text contrast on --bg (5.35:1 / 9.79:1). fail/accent already passed
+       both checks, so they're untouched. */
+    --pass: #0ca30c; --warn: #fab219; --fail: #e05c5c; --info: #7f8ea3;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 14px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .view.active { animation: fadein .18s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .btn { transition: filter .12s ease, transform .08s ease; }
+  .btn:not(:disabled):hover { filter: brightness(1.12); }
+  .btn:not(:disabled):active { transform: scale(.97); }
+  .card { box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .ep-card, .stage-row { transition: border-color .12s ease, transform .12s ease, box-shadow .12s ease; }
+  .ep-card:hover, .stage-row:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+  input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+  #guide-bar { transition: width .35s ease; }
+  header { padding: 14px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; position: sticky; top: 0; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); z-index: 10; }
+  header h1 { font-size: 16px; cursor: pointer; }
+  header .crumb { color: var(--dim); font-size: 13px; }
+  header .spacer { flex: 1; }
+  main { padding: 20px 22px; max-width: 1080px; margin: 0 auto; }
+  .view { display: none; } .view.active { display: block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+  .btn { background: var(--accent); border: none; color: #fff; padding: 8px 16px; border-radius: 7px; cursor: pointer; font-size: 13.5px; }
+  .btn.secondary { background: var(--panel2); border: 1px solid var(--line); color: var(--text); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 28px; text-align: center; color: var(--dim); cursor: pointer; margin: 14px 0; }
+  .drop.over { border-color: var(--accent); color: var(--text); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; }
+  .lv { display: inline-block; min-width: 44px; text-align: center; padding: 1px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 700; }
+  .lv.pass { background: color-mix(in srgb, var(--pass) 18%, transparent); color: var(--pass); }
+  .lv.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .lv.fail { background: color-mix(in srgb, var(--fail) 18%, transparent); color: var(--fail); }
+  .lv.info { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); color: var(--dim); }
+  .chip.green { color: var(--pass); border-color: var(--pass); }
+  .chip.red { color: var(--fail); border-color: var(--fail); }
+  .chip.yellow { color: var(--warn); border-color: var(--warn); }
+  .chip.blue { color: var(--accent); border-color: var(--accent); }
+  .fix { color: var(--dim); font-size: 12.5px; }
+  label { display: block; font-size: 12.5px; color: var(--dim); margin: 10px 0 3px; }
+  input[type=text], select { width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text); padding: 7px 10px; border-radius: 7px; font-size: 13.5px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+  .muted { color: var(--dim); font-size: 12.5px; }
+  .filepath { font-family: var(--font-mono); font-size: 12px; color: var(--dim); word-break: break-all; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; }
+  .stat b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 19px; letter-spacing: -.02em; display: block; }
+  .stat span { color: var(--dim); font-size: 11.5px; }
+  .fbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .fbar button { border: 1px solid var(--line); background: var(--panel); border-radius: 20px; padding: 3px 13px; font-size: 12px; cursor: pointer; color: var(--dim); }
+  .fbar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .duewarn { color: var(--fail); font-weight: 600; font-size: 12px; }
+  .dueok { color: var(--dim); font-size: 12px; }
+  .ep-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; cursor: pointer; }
+  .ep-card:hover { border-color: var(--accent); }
+  .ep-card h3 { font-size: 15px; margin-bottom: 4px; }
+  .dots { display: flex; gap: 5px; margin-top: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+  .dot.green { background: var(--pass); } .dot.red { background: var(--fail); }
+  .dot.yellow { background: var(--warn); } .dot.blue { background: var(--accent); }
+  .stage-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
+  .stage-row:hover { border-color: var(--accent); }
+  .stage-row .num { color: var(--dim); font-size: 12px; width: 18px; }
+  .stage-row .icon { display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; color: var(--dim); }
+  .icon svg { width: 100%; height: 100%; display: block; }
+  .ico { width: 1em; height: 1em; vertical-align: -0.15em; display: inline-block; flex-shrink: 0; }
+  .stage-row .body { flex: 1; }
+  .stage-row .body b { display: block; }
+  .stage-row .body span { color: var(--dim); font-size: 12.5px; }
+  .details h2 { font-size: 15px; margin: 16px 0 8px; color: var(--text); }
+  .details ul, .details ol { margin: 6px 0 6px 22px; }
+  .details li { margin: 3px 0; }
+  .details p { margin: 6px 0; }
+  .details table { margin: 10px 0; }
+  h2.section { font-size: 14px; margin: 18px 0 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 onclick="go('dashboard')">Media Distribution Toolkit</h1>
+  <span class="crumb" id="crumb"></span>
+  <span class="spacer"></span>
+  <button class="btn secondary small" onclick="go('dashboard')"><svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6M5 8v8a1 1 0 001 1h8a1 1 0 001-1V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Dashboard</button>
+  <button class="btn secondary small" onclick="go('settings')"><svg class="ico" viewBox="0 0 20 20" fill="none"><line x1="3" y1="5" x2="17" y2="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="5" r="2" fill="var(--panel2)" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="10" r="2" fill="var(--panel2)" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="15" x2="17" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="13" cy="15" r="2" fill="var(--panel2)" stroke="currentColor" stroke-width="1.6"/></svg> Settings</button>
+</header>
+<main>
+
+<!-- ================= DASHBOARD ================= -->
+<section class="view active" id="view-dashboard">
+  <div class="card" id="dash-setup" style="display:none">
+    <b>Welcome!</b> <span class="muted">Connect Notion in Settings to load your Distribution Catalog — or work offline (episodes won't sync).</span>
+    <div class="row" style="margin-top:10px"><button class="btn" onclick="go('settings')">Open Settings</button></div>
+  </div>
+  <div class="row" style="margin-bottom:14px">
+    <button class="btn" id="dash-new"><svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> New episode</button>
+    <button class="btn secondary" id="dash-refresh"><svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M16 10a6 6 0 11-2.2-4.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 3.5v4.2h-4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh</button>
+    <span class="muted" id="dash-status"></span>
+  </div>
+  <div class="stats" id="dash-stats"></div>
+  <div class="fbar" id="dash-filters"></div>
+  <div class="card" id="new-ep-form" style="display:none">
+    <div class="grid2">
+      <div><label>Episode title *</label><input type="text" id="ne-title"></div>
+      <div><label>Show</label><input type="text" id="ne-show"></div>
+      <div><label>Season</label><input type="text" id="ne-season"></div>
+      <div><label>Episode #</label><input type="text" id="ne-ep"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="ne-create">Create</button>
+      <button class="btn secondary" onclick="$('#new-ep-form').style.display='none'">Cancel</button>
+      <span class="muted" id="ne-status"></span>
+    </div>
+    <p class="muted" style="margin-top:8px">Tip: for the full paperwork checklist inside the row, duplicate the 📋 TEMPLATE row in Notion instead.</p>
+  </div>
+  <div class="cards" id="ep-cards"></div>
+</section>
+
+<!-- ================= EPISODE ================= -->
+<section class="view" id="view-episode">
+  <div class="card">
+    <div class="row">
+      <button class="btn secondary small" onclick="go('dashboard')">← All episodes</button>
+      <b id="ep-title" style="font-size:16px"></b>
+      <span class="chip" id="ep-status-chip"></span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn secondary small" id="ep-open-notion">Open in Notion <svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M8 4h8v8M16 4L4 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="muted">Episode folder:</span>
+      <span class="filepath" id="ep-folder">not set</span>
+      <button class="btn secondary small" id="ep-set-folder">Choose…</button>
+      <button class="btn secondary small" id="ep-open-folder" style="display:none">Open</button>
+    </div>
+    <p class="muted" style="margin-top:6px">Pick this episode's own Dropbox folder. Files you drop into stages get filed into a "<span id="ep-distname">Distribution</span>" subfolder inside it, and the path is written to Notion.</p>
+    <div class="row" style="margin-top:12px">
+      <button class="btn secondary small" id="ep-make-checklist">Create Notion checklist</button>
+      <span class="muted" id="ep-checklist-status"></span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="ep-guide"><svg class="ico" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l10 6-10 6V4z"/></svg> Guided Mode — walk me through every step</button>
+      <span class="muted" id="ep-guide-progress"></span>
+    </div>
+  </div>
+  <div id="stage-list"></div>
+</section>
+
+<!-- ================= GUIDED MODE ================= -->
+<section class="view" id="view-guide">
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn secondary small" id="guide-back">← Episode</button>
+    <b id="guide-title" style="font-size:16px"></b>
+    <span class="muted" id="guide-count"></span>
+  </div>
+  <div style="background:var(--panel2);border-radius:8px;height:8px;margin-bottom:16px;overflow:hidden">
+    <div id="guide-bar" style="background:var(--pass);height:100%;width:0%"></div>
+  </div>
+  <div id="guide-done-list"></div>
+  <div class="card" id="guide-current" style="border-color:var(--accent)"></div>
+  <div id="guide-locked"></div>
+</section>
+
+<!-- ================= STAGE ================= -->
+<section class="view" id="view-stage">
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn secondary small" id="st-back">← Back</button>
+    <b id="st-title" style="font-size:16px"></b>
+    <span class="chip" id="st-chip"></span>
+  </div>
+  <div class="card details" id="st-details"></div>
+  <div class="card" id="st-intake" style="display:none">
+    <h2 class="section" style="margin-top:0">Process a file</h2>
+    <div class="drop" id="st-drop">Drop file(s) here, or click to choose</div>
+    <div id="st-results"></div>
+    <div class="row" id="st-actions" style="display:none">
+      <button class="btn" id="st-file-btn">File to Dropbox & update Notion</button>
+      <span class="muted" id="st-file-status"></span>
+    </div>
+  </div>
+  <div class="card" id="st-build" style="display:none">
+    <h2 class="section" style="margin-top:0">Build broadcast master (optional)</h2>
+    <p class="muted" id="st-build-note">Wraps the checked file with the broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Skip this if your distributor wants a clean program-only file.</p>
+    <div class="grid2">
+      <div><label>Show code (for slate)</label><input type="text" id="st-showcode"></div>
+      <div><label>Production company</label><input type="text" id="st-prodco"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px" id="st-tail-row">
+      <input type="checkbox" id="st-textless-tail"> Textless at tail <span class="muted">(your timeline's textless block should END at the last scene — the builder adds the final 2s black)</span>
+    </label>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="st-build-btn" disabled>Build into Dropbox folder</button>
+      <span class="muted" id="st-build-status"></span>
+    </div>
+  </div>
+  <div class="card" id="st-auto" style="display:none">
+    <h2 class="section" style="margin-top:0">Auto-draft from your edit</h2>
+    <div id="auto-paperwork" style="display:none">
+      <p class="muted">In Premiere: click the timeline, then <b>File → Export → Final Cut Pro XML</b> on your final sequence, and load it here. Every audio and video track shows up below — nothing is pre-picked. Tick which audio track(s) to pull from, then every clip on those tracks appears underneath with its track and filename so you can check off which ones are actually music. Tick video tracks that are graphics/titles the same way. It drafts the <b>Music Cue Sheet</b>, <b>Lower Thirds Log</b>, and <b>Textless Materials Log</b>. Load your caption file to draft the <b>As-Broadcast Script</b>.</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn secondary" id="auto-xml-pick">Load sequence XML…</button>
+        <button class="btn secondary" id="auto-cap-pick">Load captions (.scc/.srt) → script draft</button>
+        <span class="muted" id="auto-status"></span>
+      </div>
+      <div id="auto-tracks" style="display:none">
+        <div class="grid2" style="margin-top:12px">
+          <div><label>Which AUDIO tracks are MUSIC? (all scanned by default — uncheck any to exclude)</label><div id="auto-atracks"></div></div>
+          <div><label>Which VIDEO tracks are GRAPHICS/TITLES?</label><div id="auto-vtracks"></div></div>
+        </div>
+        <div style="margin-top:12px">
+          <label>Clips on your checked track(s) — check the ones that are music, skip the rest:</label>
+          <div id="auto-songs" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:4px"></div>
+        </div>
+        <label style="margin-top:12px">Also flag texted clips on ANY video track by name (for baked-in AE renders — separate patterns with |)</label>
+        <input type="text" id="auto-pattern" value="TXT|LT_|LOWER|TITLE|CHYRON|PHOTOVIEWER|SPLITSCREEN|COUNTDOWN|GEARTH|QUOTE|INTRO|BLACKOUT|ONWALL|EVIDENCE|TECHTEXT|VIDEOBOX|(?:^|[_ -])(GEO|SAT)(?:[_ \d-]|$)|_(DEFAULT|ALPHA)(_TEXTLESS)?\.MOV$">
+        <p class="muted" style="margin-top:4px">Any video clip whose filename matches gets added to the Lower Thirds & Textless logs, whatever track it's on — this same pattern also decides which clips get swapped when building the textless sequence, below. The default already covers this show's real graphic types (Lower Thirds, Photoviewer, OnWall, Blackout, etc.) and — the durable part — matches any render farm output by its <code>_Default</code>/<code>_Alpha</code> filename suffix, so a brand new graphic type gets caught automatically without ever touching this field. Add more terms with <code>|</code> only if something's still getting missed.</p>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:10px">
+          <input type="checkbox" id="auto-mtc" checked> Write Lower Thirds/Textless log timecodes as MASTER timecode (program starts at 01:00:00:00) — keep this on if your sequence starts at 00:00:00:00. The Music Cue Sheet always uses program time (no +1 hour), matching standard cue sheet convention.
+        </label>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" id="auto-generate">Generate drafts</button>
+          <span class="muted" id="auto-gen-status"></span>
+        </div>
+      </div>
+    </div>
+    <div id="auto-captions" style="display:none">
+      <p class="muted">Exported your .scc from Premiere? It's in <b>program time</b> (starts at 00:00) — the delivered master starts at <b>01:00:00:00</b>. This shifts every caption +1 hour and saves a MASTER-TC copy. Drop THAT file through the intake above.</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn secondary" id="cap-retime">Retime captions +1 hour (program → master)…</button>
+        <span class="muted" id="cap-retime-status"></span>
+      </div>
+    </div>
+    <div id="auto-timings" style="display:none">
+      <p class="muted">Add a <b>sequence marker</b> at the start and end of every segment in Premiere (or one marker per segment with duration), export <b>File → Export → Final Cut Pro XML</b>, and load it here — the app writes the frame-accurate <b>timings CSV</b> into 05 Segment Timings and drafts the Segment Timing Sheet.</p>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <input type="checkbox" id="auto-mtc2" checked> Write as MASTER timecode (program at 01:00:00:00)
+      </label>
+      <div class="row" style="margin-top:8px">
+        <button class="btn secondary" id="auto-xml-pick2">Load sequence XML…</button>
+        <span class="muted" id="auto-status2"></span>
+      </div>
+    </div>
+  </div>
+  <div class="card" id="st-stemforge" style="display:none">
+    <h2 class="section" style="margin-top:0">Stem Assembler</h2>
+    <p class="muted">Export five audio-only WAVs from your sequence (48kHz/24-bit stereo, via track solos): FULL (everything), NARR (narration only), DX (all spoken content), MX (all music), FX (all effects). The app builds the 16-track layout — stem-based 5.1 (C = dialogue+narration, LFE low-passed, surrounds −6dB), Lt/Rt, FX/MX/M&E pairs, narration, mono — then embeds it into your program video so QC passes fully.</p>
+    <div class="grid2">
+      <div><label>FULL mix *</label><div class="row"><button class="btn secondary small" data-stem="full">Choose…</button><span class="filepath" id="stem-full">—</span></div></div>
+      <div><label>NARR (narration)</label><div class="row"><button class="btn secondary small" data-stem="narr">Choose…</button><span class="filepath" id="stem-narr">—</span></div></div>
+      <div><label>DX (dialogue) *</label><div class="row"><button class="btn secondary small" data-stem="dx">Choose…</button><span class="filepath" id="stem-dx">—</span></div></div>
+      <div><label>MX (music) *</label><div class="row"><button class="btn secondary small" data-stem="mx">Choose…</button><span class="filepath" id="stem-mx">—</span></div></div>
+      <div><label>FX (effects) *</label><div class="row"><button class="btn secondary small" data-stem="fx">Choose…</button><span class="filepath" id="stem-fx">—</span></div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="stem-build" disabled>1 · Build 16 tracks → 03 Audio Stems</button>
+      <button class="btn" id="stem-embed" disabled>2 · Embed into program video…</button>
+      <button class="btn secondary" id="stem-pad" disabled>3 · Write master-aligned sidecars</button>
+    </div>
+    <div class="muted" id="stem-status" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="st-renderfarm" style="display:none">
+    <h2 class="section" style="margin-top:0">Render Farm</h2>
+    <p class="muted">Scan finds your After Effects projects, grouped by graphic type. Each one is a single row in that project's <b>MGX:</b> Notion database — <b>texted</b> and <b>text off</b> are tracked as two independent statuses on that SAME row, so you can queue either or both together in one batch. For text off, the app first opens the project locally just to disable its text layers (real text layers auto-detected; name baked text layers with a <b>TXT_</b> prefix or label color <b>9 (green)</b>) and saves a <b>_TEXTLESS.aep</b> copy beside the original — the render farm then renders whichever file each status points at. Projects with no text layers are skipped for the text-off pass. Set up the relay URL/token first in <a href="#" onclick="go('settings')">Settings</a>.</p>
+    <div class="row">
+      <button class="btn secondary" id="fx-scan">Scan a folder for AEPs…</button>
+      <span class="muted" id="fx-scan-status"></span>
+    </div>
+    <div class="row" id="fx-selection-bar" style="display:none;margin-top:10px;align-items:center">
+      <span class="muted" id="fx-selected-count">0 selected</span>
+      <button class="btn secondary small" id="fx-select-all">Select all</button>
+      <button class="btn secondary small" id="fx-select-none">Select none</button>
+    </div>
+    <div id="fx-aeps" style="margin-top:8px"></div>
+    <div class="row" style="margin-top:8px;align-items:center">
+      <label style="display:flex;gap:6px;align-items:center;margin:0"><span class="muted">Format</span>
+        <select id="fx-format" style="max-width:140px">
+          <option value="Default">Default</option>
+          <option value="Alpha">Alpha</option>
+        </select>
+      </label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="fx-run-texted" style="display:none">Send batch (texted)</button>
+      <button class="btn" id="fx-run-textless" style="display:none">Send batch (text off)</button>
+      <button class="btn" id="fx-run-both" style="display:none">Send batch (both)</button>
+      <button class="btn secondary" id="fx-stop" style="display:none;border-color:var(--fail);color:var(--fail)"><svg class="ico" viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="5" width="10" height="10" rx="1.5"/></svg> Stop batch</button>
+      <span class="muted" id="fx-run-status"></span>
+    </div>
+    <div id="fx-results" style="margin-top:6px"></div>
+  </div>
+  <div class="card" id="st-textless-tools" style="display:none">
+    <h2 class="section" style="margin-top:0">Build the Textless Sequence</h2>
+    <p class="muted">Once your render-farm graphics are done (see the <a href="#" onclick="openStageById('renderfarm')">Render Farm</a> stage), load your texted sequence XML here: the app swaps every texted graphic's file path to its _TEXTLESS render and saves a new XML. Import that into Premiere (File → Import) and a fully-linked TEXTLESS sequence appears — same cuts, same timecodes. Export your textless master from it, then use the QC/build tools above to finish it.</p>
+    <div class="row">
+      <button class="btn secondary" id="fx-xml">Load sequence XML → make TEXTLESS XML</button>
+      <span class="muted" id="fx-xml-status"></span>
+    </div>
+    <div id="fx-xml-report" class="muted" style="margin-top:6px"></div>
+    <p class="muted" style="margin-top:12px"><b>Fully clean version (no graphic at all).</b> When text sits on a graphic — a lower-third bar, a blur box, a text-message bubble — the spec wants BOTH a textless-graphic version (bar stays, text gone) and a <b>fully clean</b> one with no graphic whatsoever. For on-screen overlays that needs no rendering: this disables the graphic clips in a copy of your sequence. Import it, export, and you have the clean plate.</p>
+    <div class="row">
+      <button class="btn secondary" id="fx-clean">Load sequence XML → make CLEAN XML (graphics off)</button>
+      <span class="muted" id="fx-clean-status"></span>
+    </div>
+    <div id="fx-clean-report" class="muted" style="margin-top:6px"></div>
+    <hr style="border-color:var(--line);margin:16px 0">
+    <p class="muted"><b>Verify with OCR.</b> After you export the textless master, the app can watch it: samples a frame every few seconds and reads any text it finds. Bodycam footage has camera-burned timestamps, so use the ignore strips to skip where the OSD lives; whatever remains in the report is either leftover graphics to fix, or ignorable OSD you can dismiss by eye. A 45-min episode at 5s intervals takes roughly 10–20 minutes.</p>
+    <div class="row">
+      <button class="btn secondary" id="ocr-pick">Choose textless master…</button>
+      <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="ocr-top" checked> ignore top 15% (OSD)</label>
+      <label style="display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="ocr-bottom"> ignore bottom 10%</label>
+      <select id="ocr-interval" style="max-width:130px">
+        <option value="2">every 2s (thorough)</option>
+        <option value="5" selected>every 5s</option>
+        <option value="10">every 10s (fast)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="ocr-run" disabled>Scan for leftover text</button>
+      <span class="muted" id="ocr-status"></span>
+    </div>
+    <div id="ocr-report" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="st-docs" style="display:none">
+    <h2 class="section" style="margin-top:0">Create documents in-app</h2>
+    <p class="muted">Fill these out here — drafts save automatically. Export renders a clean PDF straight into this episode's <b>06 Docs</b> folder in Dropbox.</p>
+    <div id="doc-list"></div>
+  </div>
+  <div class="card" id="st-collect" style="display:none">
+    <h2 class="section" style="margin-top:0">Collect from a vendor</h2>
+    <p class="muted">Not authored in-app — ordered and received separately. Title/Copyright Search Reports must be dated within 60 days of delivery, and don't order the title search until the distributor has approved the title.</p>
+    <div id="collect-list"></div>
+  </div>
+  <div class="card" id="st-manual" style="display:none">
+    <div class="row">
+      <button class="btn" id="st-done-btn">Mark stage complete</button>
+      <button class="btn secondary" id="st-notion-btn">Open episode in Notion <svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M8 4h8v8M16 4L4 16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="btn" id="st-ready-btn" style="display:none">✓ Mark Distribution Ready in Notion</button>
+      <span class="muted" id="st-manual-status"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DOC EDITOR ================= -->
+<section class="view" id="view-docedit">
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn secondary small" id="doc-back">← Back to Paperwork</button>
+    <b id="doc-title" style="font-size:16px"></b>
+    <span class="muted" id="doc-savenote"></span>
+  </div>
+  <div class="card"><p class="muted" id="doc-desc"></p></div>
+  <div id="doc-form"></div>
+  <div class="card">
+    <div class="row">
+      <button class="btn" id="doc-export">Export PDF → 06 Docs</button>
+      <span class="muted" id="doc-status"></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section class="view" id="view-settings">
+  <div class="row" style="margin-bottom:12px">
+    <button class="btn secondary small" onclick="go('dashboard')">← Back to dashboard</button>
+  </div>
+  <div class="card">
+    <h2 class="section" style="margin-top:0">Notion connection</h2>
+    <p class="muted">1) notion.so/profile/integrations → New integration → copy the secret. 2) On your <b>Media Distribution Hub</b> page: ⋯ → Connections → add it. 3) Paste below. Stored only on this computer.</p>
+    <label>Integration token</label><input type="text" id="set-token" placeholder="ntn_… or secret_…">
+    <label>Distribution Catalog database link or ID</label><input type="text" id="set-db">
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="set-save">Save & test</button>
+      <span class="muted" id="set-status"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h2 class="section" style="margin-top:0">Filing & documents</h2>
+    <label>Company name (appears on all exported document letterheads & footers)</label>
+    <input type="text" id="set-company" placeholder="Insanity Media, LLC">
+    <label>Distribution subfolder name (created inside each episode's folder)</label>
+    <input type="text" id="set-distname" placeholder="Distribution">
+    <div class="row" style="margin-top:12px"><button class="btn" id="set-save2">Save</button><span class="muted" id="set-status2"></span></div>
+  </div>
+  <div class="card">
+    <h2 class="section" style="margin-top:0">Render Farm</h2>
+    <p class="muted">The Render Farm stage queues each AE project on the render farm through one shared relay — this app never holds a Notion or Dropbox credential itself. It disables text layers locally when needed (the only part that has to happen on this machine), converts the file's local path to a Dropbox path, and sends a request to the relay below, which does the rest.</p>
+    <label>Relay URL <span class="muted">(where the render farm relay is hosted)</span></label>
+    <input type="text" id="set-relay-url" placeholder="https://your-relay.example.com">
+    <label>Relay token</label>
+    <input type="text" id="set-relay-token" placeholder="shared extension token">
+    <label>Dropbox local folder anchor <span class="muted">(the Dropbox team folder name as it appears in Finder, used to convert a local file path into a Dropbox path)</span></label>
+    <input type="text" id="set-dbx-anchor" placeholder="Insanity Media Dropbox">
+    <div class="row" style="margin-top:12px"><button class="btn" id="set-farm-save">Save</button><span class="muted" id="set-farm-status"></span></div>
+  </div>
+</section>
+
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let settings = {}, stages = [], episodes = [], curEp = null, curStage = null;
+let checkedFiles = []; // [{path, results, ok}]
+
+// Small inline status icons — replaces the ✔/✖/⚠ dingbats in HTML-inserted (innerHTML)
+// spots. NOT used anywhere a string goes through .textContent, where raw markup would
+// render as literal escaped text instead of an icon.
+const ICO = {
+  ok: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  no: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  warn: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M10 3l8 14H2L10 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4M10 14.5v.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  skip: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M5 4l7 6-7 6V4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="15" y1="4" x2="15" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  clock: '<svg class="ico" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  doc: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M6 3h6l3 3v11a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 3v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="7" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1"/><line x1="7" y1="13" x2="13" y2="13" stroke="currentColor" stroke-width="1.1"/></svg>',
+  box: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M10 3l7 3.5v7L10 17l-7-3.5v-7L10 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.5 6.5L10 10l6.5-3.5M10 10v7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+};
+
+const ASSET_SUCCESS = { video: 'QC Passed', wav: 'Ready', timings: 'Ready', ext: 'Ready' };
+
+function go(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $('#view-' + view).classList.add('active');
+  $('#crumb').textContent = view === 'episode' && curEp ? curEp.title
+    : view === 'stage' && curStage ? `${curEp ? curEp.title + ' · ' : ''}${curStage.name}` : '';
+}
+
+function chipClass(status) {
+  if (['QC Passed', 'Ready', 'Delivered', 'Distribution Ready', 'Done'].includes(status)) return 'green';
+  if (status === 'QC Failed') return 'red';
+  if (status === 'In progress' || status === 'In Progress') return 'yellow';
+  return '';
+}
+
+// ---------- init ----------
+(async () => {
+  settings = await window.feg.loadSettings();
+  stages = await window.feg.stageDefs();
+  $('#set-token').value = settings.notionToken || '';
+  $('#set-db').value = settings.notionDb || '';
+  $('#set-distname').value = settings.distFolderName || 'Distribution';
+  $('#set-company').value = settings.companyName || '';
+  $('#set-relay-url').value = settings.farmRelayUrl || '';
+  $('#set-relay-token').value = settings.farmRelayToken || '';
+  $('#set-dbx-anchor').value = settings.dropboxLocalAnchor || 'Insanity Media Dropbox';
+  refreshDashboard();
+})();
+
+// ---------- dashboard ----------
+async function refreshDashboard() {
+  if (!settings.notionToken || !settings.notionDb) {
+    $('#dash-setup').style.display = 'block';
+    $('#ep-cards').innerHTML = '';
+    return;
+  }
+  $('#dash-setup').style.display = 'none';
+  $('#dash-status').textContent = 'Loading from Notion…';
+  try {
+    episodes = await window.feg.notionEpisodes();
+    $('#dash-status').textContent = `${episodes.length} episode(s)`;
+    renderCards();
+  } catch (e) {
+    $('#dash-status').textContent = '✖ ' + e.message;
+  }
+}
+
+const PIPELINE = ['Ready For Processing', 'In Progress', 'Distribution Ready'];
+let dashFilter = localStorage.getItem('dashFilter') || 'All';
+
+function daysUntil(iso) {
+  if (!iso) return null;
+  return Math.ceil((new Date(iso + 'T00:00:00') - new Date()) / 86400000);
+}
+
+function renderCards() {
+  // summary stats
+  const dueSoon = episodes.filter(e => { const d = daysUntil(e.deliverBy); return d != null && d <= 7 && e.status !== 'Distribution Ready'; }).length;
+  $('#dash-stats').innerHTML =
+    `<div class="stat"><b>${episodes.length}</b><span>episodes</span></div>` +
+    PIPELINE.map(s => `<div class="stat"><b>${episodes.filter(e => e.status === s).length}</b><span>${s}</span></div>`).join('') +
+    `<div class="stat"><b style="color:${dueSoon ? 'var(--fail)' : 'var(--pass)'}">${dueSoon}</b><span>due ≤ 7 days</span></div>`;
+
+  // filters
+  $('#dash-filters').innerHTML = ['All', ...PIPELINE].map(f =>
+    `<button class="${f === dashFilter ? 'on' : ''}" onclick="setDashFilter('${f}')">${f}</button>`).join('');
+
+  // cards, sorted by deliver-by (soonest first, undated last)
+  const order = episodes.map((e, i) => ({ e, i }))
+    .sort((a, b) => ((a.e.deliverBy || '9999') < (b.e.deliverBy || '9999') ? -1 : 1))
+    .filter(x => dashFilter === 'All' || x.e.status === dashFilter);
+
+  $('#ep-cards').innerHTML = order.map(({ e, i }) => {
+    const dots = ['Texted Video', 'Textless Video', 'Textless No Graphics', 'Audio Stems', 'Closed Captions', 'Segment Timings']
+      .map(k => `<span class="dot ${chipClass(e.assets[k]) || ''}" title="${k}: ${e.assets[k]}"></span>`).join('');
+    const se = (e.season != null || e.ep != null) ? `S${e.season ?? '?'} E${e.ep ?? '?'}` : '';
+    const d = daysUntil(e.deliverBy);
+    const due = e.deliverBy
+      ? `<div class="${d != null && d <= 7 ? 'duewarn' : 'dueok'}">Deliver by ${e.deliverBy}${d != null ? (d < 0 ? ` — ${Math.abs(d)}d OVERDUE` : ` — ${d}d left`) : ''}</div>`
+      : `<div class="dueok">No deliver-by date</div>`;
+    return `<div class="ep-card" onclick="openEpisode(${i})">
+      <h3>${e.title}</h3>
+      <span class="muted">${[e.show, se].filter(Boolean).join(' · ')}${e.airDate ? ' · airs ' + e.airDate : ''}</span><br>
+      <span class="chip ${chipClass(e.status)}" style="margin-top:8px">${e.status || '—'}</span>
+      <div class="dots">${dots}</div>
+      <div style="margin-top:8px">${due}</div>
+      ${e.lastQC ? `<div class="dueok">Last QC: ${e.lastQC.slice(0, 10)}</div>` : ''}
+    </div>`;
+  }).join('') || '<p class="muted">No episodes match — create one, or duplicate the 📋 TEMPLATE row in Notion.</p>';
+}
+
+function setDashFilter(f) { dashFilter = f; localStorage.setItem('dashFilter', f); renderCards(); }
+
+$('#dash-refresh').onclick = refreshDashboard;
+$('#dash-new').onclick = () => $('#new-ep-form').style.display = 'block';
+$('#ne-create').onclick = async () => {
+  const title = $('#ne-title').value.trim();
+  if (!title) return;
+  $('#ne-status').textContent = 'Creating…';
+  try {
+    await window.feg.notionCreateEpisode({ title, show: $('#ne-show').value.trim(), season: $('#ne-season').value.trim(), ep: $('#ne-ep').value.trim() });
+    $('#ne-status').textContent = '✔';
+    $('#new-ep-form').style.display = 'none';
+    ['#ne-title', '#ne-show', '#ne-season', '#ne-ep'].forEach(s => $(s).value = '');
+    refreshDashboard();
+  } catch (e) { $('#ne-status').textContent = '✖ ' + e.message; }
+};
+
+// ---------- episode ----------
+function epFolder() { return (settings.episodeFolders || {})[curEp.id] || null; }
+function epState(stageId) { return ((settings.epState || {})[curEp.id] || {})[stageId] || null; }
+
+function openEpisode(i) {
+  curEp = episodes[i];
+  $('#ep-title').textContent = curEp.title;
+  $('#ep-status-chip').textContent = curEp.status || '—';
+  $('#ep-status-chip').className = 'chip ' + chipClass(curEp.status);
+  $('#ep-distname').textContent = settings.distFolderName || 'Distribution';
+  renderEpFolder();
+  renderChecklistStatus();
+  renderStages();
+  setTimeout(updateGuideProgressLabel, 50);
+  go('episode');
+}
+
+// ---------- Notion stage checklist ----------
+const CHECKLIST_DESCRIPTION = 'Delivery checklist and technical specification for this episode, tracking every deliverable required for broadcast distribution against Insanity Media\'s Export Distribution List. Checked items reflect live status from the Media Distribution Toolkit.';
+const CHECKLIST_SPEC_LINES = [
+  'Video — ProRes 422 HQ · QuickTime MOV · 1920x1080 · 16:9 · square pixels · 29.97 progressive · 10-bit 4:2:2 · Legal Rec. 709. Head/tail: 30s black → 30s bars+tone → 30s slate → 30s black → program at 01:00:00:00.',
+  'Audio — 16 embedded mono PCM tracks (48kHz/24-bit) per master. 60 sidecar mono WAVs across 7 stems (Full Mix, M&E, Dialogue, Music, Effects, Mix-Minus-Narration, Narration) in 5.1/2.0/1.0 as applicable.',
+  'Data — SCC captions + CSV timings sheet, both matched to master timecode.',
+];
+
+function renderChecklistStatus() {
+  const map = (settings.checklistBlocks || {})[curEp.id];
+  $('#ep-checklist-status').textContent = map ? '✔ Checklist created — stages check off as you complete them' : '';
+  $('#ep-make-checklist').textContent = map ? 'Re-create Notion checklist' : 'Create Notion checklist';
+}
+
+$('#ep-make-checklist').onclick = async () => {
+  $('#ep-checklist-status').textContent = 'Writing to Notion…';
+  try {
+    const map = await window.feg.notionCreateChecklist({
+      pageId: curEp.id, description: CHECKLIST_DESCRIPTION, specLines: CHECKLIST_SPEC_LINES,
+    });
+    settings.checklistBlocks = settings.checklistBlocks || {};
+    settings.checklistBlocks[curEp.id] = map;
+    await window.feg.saveSettings(settings);
+    renderChecklistStatus();
+  } catch (e) { $('#ep-checklist-status').textContent = '✖ ' + e.message; }
+};
+
+// Called wherever a stage actually gets marked complete — silently does
+// nothing if this episode never had a checklist created (no map, no attempt).
+async function checkChecklistItem(stageId) {
+  const map = (settings.checklistBlocks || {})[curEp.id];
+  const blockId = map && map[stageId];
+  if (!blockId) return;
+  try { await window.feg.notionSetChecklistItem({ blockId, checked: true }); } catch (e) { /* best-effort */ }
+}
+
+function renderEpFolder() {
+  const f = epFolder();
+  $('#ep-folder').textContent = f || 'not set — choose the episode\'s Dropbox folder';
+  $('#ep-open-folder').style.display = f ? '' : 'none';
+}
+
+$('#ep-set-folder').onclick = async () => {
+  const dir = await window.feg.pickDirectory();
+  if (!dir) return;
+  settings.episodeFolders = settings.episodeFolders || {};
+  settings.episodeFolders[curEp.id] = dir;
+  await window.feg.saveSettings(settings);
+  renderEpFolder();
+  try {
+    await window.feg.ensureDistFolders({ episodeFolder: dir, distName: settings.distFolderName || 'Distribution' });
+  } catch (e) { $('#ep-folder').textContent += ` — ⚠ couldn't create the Distribution folders: ${e.message}`; }
+  try {
+    const dist = dir + '/' + (settings.distFolderName || 'Distribution');
+    await window.feg.notionSetDropboxPath({ pageId: curEp.id, folderPath: dist });
+  } catch (e) { /* notion optional */ }
+};
+$('#ep-open-folder').onclick = () => window.feg.openFolder(epFolder());
+$('#ep-open-notion').onclick = () => curEp.url && window.feg.openExternal(curEp.url);
+
+function stageStatus(st) {
+  if (st.notionProp) return curEp.assets[st.notionProp] || 'Not started';
+  return epState(st.id) === 'done' ? 'Done' : 'Not started';
+}
+
+function renderStages() {
+  $('#stage-list').innerHTML = stages.map((st, i) => {
+    const status = stageStatus(st);
+    return `<div class="stage-row" onclick="openStage(${i})">
+      <span class="num">${i + 1}</span>
+      <span class="icon">${st.icon}</span>
+      <div class="body"><b>${st.name}</b><span>${st.summary}</span></div>
+      <span class="chip ${chipClass(status)}">${status}</span>
+    </div>`;
+  }).join('');
+}
+
+// ---------- stage ----------
+function openStageById(id) {
+  const i = stages.findIndex(s => s.id === id);
+  if (i > -1) openStage(i);
+}
+function openStage(i) {
+  curStage = stages[i];
+  checkedFiles = [];
+  $('#st-title').innerHTML = `<span class="icon" style="display:inline-flex;width:19px;height:19px;vertical-align:-4px;margin-right:2px">${curStage.icon}</span> ${curStage.name}`;
+  const status = stageStatus(curStage);
+  $('#st-chip').textContent = status;
+  $('#st-chip').className = 'chip ' + chipClass(status);
+  $('#st-details').innerHTML = curStage.details;
+  $('#st-results').innerHTML = '';
+  $('#st-actions').style.display = 'none';
+  $('#st-file-status').textContent = '';
+  $('#st-intake').style.display = curStage.intake ? 'block' : 'none';
+  $('#st-build').style.display = (curStage.id === 'texted' || curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'block' : 'none';
+  if (curStage.id === 'textless' || curStage.id === 'textless_nogfx') {
+    $('#st-tail-row').style.display = 'none';
+    $('#st-build-note').textContent = (curStage.id === 'textless_nogfx'
+      ? 'Wraps the checked no-graphics file with the broadcast head/tail.'
+      : 'Wraps the checked textless file with the broadcast head/tail.') +
+      ' The slate will read "TEXTLESS VERSION" per spec (same specs and length rules as the texted master).';
+  } else if (curStage.id === 'texted') {
+    $('#st-tail-row').style.display = 'flex';
+    $('#st-build-note').textContent = 'Wraps the checked file with the broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Skip this if your distributor wants a clean program-only file.';
+  }
+  $('#st-build-btn').disabled = true;
+  $('#st-build-status').textContent = '';
+  $('#st-manual').style.display = curStage.notionProp ? 'none' : 'block';
+  $('#st-docs').style.display = curStage.id === 'paperwork' ? 'block' : 'none';
+  if (curStage.id === 'paperwork') renderDocList();
+  $('#st-collect').style.display = curStage.id === 'paperwork' ? 'block' : 'none';
+  if (curStage.id === 'paperwork') renderCollectList();
+  $('#st-stemforge').style.display = curStage.id === 'stems' ? 'block' : 'none';
+  if (curStage.id === 'stems') {
+    // Stem Forge state is picked-file paths + a built output folder — none of it is
+    // valid for a different episode. Without this reset, building stems for episode A
+    // then opening episode B's Audio Stems stage leaves Embed/Pad enabled and pointing
+    // at episode A's files: clicking them silently embeds/files episode A's audio into
+    // episode B's delivery folder.
+    stemFiles.full = stemFiles.dx = stemFiles.mx = stemFiles.fx = stemFiles.narr = null;
+    stemsOutDir = null; embeddedFrameRate = null;
+    ['full', 'narr', 'dx', 'mx', 'fx'].forEach(k => { $('#stem-' + k).textContent = '—'; });
+    $('#stem-build').disabled = true; $('#stem-embed').disabled = true; $('#stem-pad').disabled = true;
+    $('#stem-status').textContent = '';
+  }
+  $('#st-renderfarm').style.display = curStage.id === 'renderfarm' ? 'block' : 'none';
+  if (curStage.id === 'renderfarm') { fxAeps = []; fxSelected = new Set(); fxGroupView = null; $('#fx-aeps').innerHTML = ''; $('#fx-selection-bar').style.display = 'none'; $('#fx-results').innerHTML = ''; $('#fx-run-texted').style.display = 'none'; $('#fx-run-textless').style.display = 'none'; $('#fx-run-both').style.display = 'none'; $('#fx-scan-status').textContent = ''; $('#fx-run-status').textContent = ''; }
+  $('#st-textless-tools').style.display = (curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'block' : 'none';
+  if (curStage.id === 'textless' || curStage.id === 'textless_nogfx') { $('#fx-xml-status').textContent = ''; $('#fx-xml-report').textContent = ''; $('#fx-clean-status').textContent = ''; $('#fx-clean-report').textContent = ''; }
+  $('#st-auto').style.display = (curStage.id === 'paperwork' || curStage.id === 'timings' || curStage.id === 'captions') ? 'block' : 'none';
+  $('#auto-paperwork').style.display = curStage.id === 'paperwork' ? 'block' : 'none';
+  $('#auto-timings').style.display = curStage.id === 'timings' ? 'block' : 'none';
+  $('#auto-captions').style.display = curStage.id === 'captions' ? 'block' : 'none';
+  $('#cap-retime-status').textContent = '';
+  $('#auto-tracks').style.display = 'none';
+  $('#auto-status').textContent = ''; $('#auto-status2').textContent = ''; $('#auto-gen-status').textContent = '';
+  $('#st-ready-btn').style.display = curStage.id === 'deliver' ? '' : 'none';
+  $('#st-manual-status').textContent = '';
+  if (curStage.intake) $('#st-drop').textContent =
+    `Drop ${curStage.intake.multi ? 'file(s)' : 'a file'} here (${curStage.intake.accept.map(e => '.' + e).join(' ')}), or click to choose`;
+  go('stage');
+}
+$('#st-back').onclick = () => { renderStages(); go('episode'); };
+
+// intake
+const stDrop = $('#st-drop');
+stDrop.onclick = async () => {
+  const files = await window.feg.pickFiles({ multi: !!(curStage.intake && curStage.intake.multi), filters: [{ name: 'Accepted', extensions: curStage.intake.accept }] });
+  if (files.length) handleFiles(files);
+};
+stDrop.ondragover = e => { e.preventDefault(); stDrop.classList.add('over'); };
+stDrop.ondragleave = () => stDrop.classList.remove('over');
+stDrop.ondrop = e => {
+  e.preventDefault(); stDrop.classList.remove('over');
+  const files = [...e.dataTransfer.files].map(f => f.path).filter(Boolean);
+  if (files.length) handleFiles(files);
+};
+
+function renderResults() {
+  $('#st-results').innerHTML = checkedFiles.map(cf => {
+    const counts = { pass: 0, warn: 0, fail: 0 };
+    cf.results.forEach(r => { if (counts[r.level] !== undefined) counts[r.level]++; });
+    const runtimeRow = cf.results.find(r => r.check === 'Runtime format');
+    const tableResults = cf.results.filter(r => r.check !== 'Runtime format');
+    const rows = tableResults.map(r =>
+      `<tr><td><span class="lv ${r.level}">${r.level.toUpperCase()}</span></td><td>${r.check}</td><td>${r.detail}${r.fix ? `<div class="fix">→ ${r.fix}</div>` : ''}</td></tr>`).join('');
+    const runtimeColor = runtimeRow && runtimeRow.level === 'pass' ? 'var(--pass)' : 'var(--warn)';
+    const runtimeBanner = runtimeRow ? `<div style="margin:8px 0;padding:10px 12px;border-radius:8px;background:var(--panel2);border:1px solid ${runtimeColor}">
+      <b style="color:${runtimeColor}">${ICO.clock} ${runtimeRow.detail}</b>${runtimeRow.fix ? `<div class="fix" style="margin-top:4px">→ ${runtimeRow.fix}</div>` : ''}
+    </div>` : '';
+    return `<div style="margin-bottom:14px"><div class="filepath">${cf.path}</div>
+      <div class="row" style="margin:4px 0"><span style="color:var(--pass)">${ICO.ok} ${counts.pass}</span><span style="color:var(--warn)">${ICO.warn} ${counts.warn}</span><span style="color:var(--fail)">${ICO.no} ${counts.fail}</span>
+      <b style="color:${cf.ok ? 'var(--pass)' : 'var(--fail)'}">${cf.ok ? 'CHECKS PASSED' : 'FAILED — fix and re-export, or file anyway below'}</b></div>
+      ${runtimeBanner}
+      <table><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+  if (checkedFiles.length) {
+    $('#st-actions').style.display = 'flex';
+    const anyFail = checkedFiles.some(cf => !cf.ok);
+    $('#st-file-btn').textContent = anyFail ? 'File anyway & update Notion (marks QC Failed)' : 'File to Dropbox & update Notion';
+    $('#st-build-btn').disabled = !(checkedFiles.length === 1 && checkedFiles[0].ok);
+  }
+}
+
+async function handleFiles(paths) {
+  $('#st-results').innerHTML = '<p class="muted">Checking…</p>';
+  checkedFiles = [];
+  for (const p of paths) {
+    try {
+      const results = await window.feg.intakeCheck({ stageId: curStage.id, filePath: p });
+      checkedFiles.push({ path: p, results, ok: !results.some(r => r.level === 'fail') });
+    } catch (e) {
+      checkedFiles.push({ path: p, results: [{ level: 'fail', check: 'Check', detail: e.message }], ok: false });
+    }
+  }
+  renderResults();
+}
+
+$('#st-file-btn').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#st-file-status').textContent = '✖ Set the episode folder first (back on the episode page).'; return; }
+  $('#st-file-status').textContent = 'Filing…';
+  try {
+    let distFolder = '', note = '';
+    for (const cf of checkedFiles) {
+      const r = await window.feg.intakeFile({ stageId: curStage.id, filePath: cf.path, episodeFolder: folder });
+      distFolder = r.distFolder;
+    }
+    // Notion updates
+    const allOk = checkedFiles.every(cf => cf.ok);
+    if (curStage.notionProp) {
+      const kind = curStage.intake.check;
+      let stageSucceeded = false;
+      if (kind === 'video') {
+        const fails = checkedFiles.flatMap(cf => cf.results.filter(r => r.level === 'fail').map(r => `${r.check}: ${r.detail}`)).join(' | ').slice(0, 800);
+        await window.feg.notionPushQC({ pageId: curEp.id, asset: curStage.notionProp, passed: allOk, failSummary: fails || 'none' });
+        stageSucceeded = allOk;
+      } else {
+        // Captions: SCC is the REQUIRED format — other formats are optional extras.
+        let ready = allOk;
+        if (curStage.id === 'captions' && !checkedFiles.some(cf => cf.path.toLowerCase().endsWith('.scc'))) {
+          ready = false;
+          note = '⚠ No .scc yet (SCC is the required format) — Notion stays "In progress". ';
+        }
+        await window.feg.notionSetAsset({ pageId: curEp.id, asset: curStage.notionProp, status: ready ? ASSET_SUCCESS[kind] || 'Ready' : 'In progress' });
+        curEp.assets[curStage.notionProp] = ready ? (ASSET_SUCCESS[kind] || 'Ready') : 'In progress';
+        stageSucceeded = ready;
+      }
+      if (curStage.intake.check === 'video') curEp.assets[curStage.notionProp] = allOk ? 'QC Passed' : 'QC Failed';
+      if (stageSucceeded) await checkChecklistItem(curStage.id);
+    }
+    try { await window.feg.notionSetDropboxPath({ pageId: curEp.id, folderPath: distFolder }); } catch (e) { /* optional */ }
+    $('#st-file-status').textContent = note + `✔ Filed ${checkedFiles.length} file(s) → ${distFolder} · Notion updated`;
+    const status = stageStatus(curStage);
+    $('#st-chip').textContent = status; $('#st-chip').className = 'chip ' + chipClass(status);
+  } catch (e) {
+    $('#st-file-status').textContent = '✖ ' + e.message;
+  }
+};
+
+// build broadcast master
+$('#st-build-btn').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#st-build-status').textContent = '✖ Set the episode folder first.'; return; }
+  if (!(checkedFiles.length === 1 && checkedFiles[0].ok)) return;
+  const src = checkedFiles[0].path;
+  const distName = settings.distFolderName || 'Distribution';
+  const sub = curStage.intake.sub;
+  const base = src.split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
+  const out = `${folder}/${distName}/${sub}/${base}_BROADCAST.mov`;
+  $('#st-build-btn').disabled = true;
+  window.feg.onBuildProgress(stage => $('#st-build-status').textContent = stage);
+  try {
+    const se = (curEp.season != null && curEp.ep != null) ? `S${String(curEp.season).padStart(2, '0')}E${String(curEp.ep).padStart(2, '0')}` : '';
+    await window.feg.buildMaster({
+      input: src, output: out,
+      slate: {
+        programTitle: curEp.show || curEp.title, episodeTitle: curEp.title, seasonEpisode: se,
+        showCode: $('#st-showcode').value, productionCompany: $('#st-prodco').value,
+        textlessAtTail: curStage.id === 'texted' && $('#st-textless-tail').checked,
+        version: (curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'textless' : 'texted',
+      },
+    });
+    $('#st-build-status').textContent = '✔ Broadcast master built: ' + out;
+  } catch (e) {
+    $('#st-build-status').textContent = '✖ ' + e.message;
+  }
+  $('#st-build-btn').disabled = false;
+};
+
+// manual stages
+$('#st-done-btn').onclick = async () => {
+  settings.epState = settings.epState || {};
+  settings.epState[curEp.id] = settings.epState[curEp.id] || {};
+  settings.epState[curEp.id][curStage.id] = 'done';
+  await window.feg.saveSettings(settings);
+  $('#st-chip').textContent = 'Done'; $('#st-chip').className = 'chip green';
+  $('#st-manual-status').textContent = '✔ Marked complete';
+  await checkChecklistItem(curStage.id);
+};
+$('#st-notion-btn').onclick = () => curEp.url && window.feg.openExternal(curEp.url);
+$('#st-ready-btn').onclick = async () => {
+  $('#st-manual-status').textContent = 'Updating Notion…';
+  try {
+    await window.feg.notionSetStatus({ pageId: curEp.id, status: 'Distribution Ready' });
+    curEp.status = 'Distribution Ready';
+    $('#st-manual-status').textContent = '✔ Episode is Distribution Ready';
+  } catch (e) { $('#st-manual-status').textContent = '✖ ' + e.message; }
+};
+
+// ---------- document templates ----------
+let templates = [], curTpl = null, checklist = null;
+(async () => { templates = await window.feg.templateDefs(); })();
+(async () => { checklist = await window.feg.checklistDefs(); })();
+
+function docDraft(tplId) {
+  return (((settings.docDrafts || {})[curEp?.id] || {})[tplId]) || { fields: {}, tables: {}, exported: false };
+}
+async function saveDocDraft(tplId, draft) {
+  settings.docDrafts = settings.docDrafts || {};
+  settings.docDrafts[curEp.id] = settings.docDrafts[curEp.id] || {};
+  settings.docDrafts[curEp.id][tplId] = draft;
+  await window.feg.saveSettings(settings);
+}
+
+function renderDocList() {
+  $('#doc-list').innerHTML = templates.map(t => {
+    const d = docDraft(t.id);
+    const has = Object.keys(d.fields).length || Object.values(d.tables).some(rows => rows && rows.length);
+    const status = d.exported ? 'Exported' : has ? 'Draft' : '—';
+    return `<div class="stage-row" onclick="openDoc('${t.id}')">
+      <span class="icon">${ICO.doc}</span>
+      <div class="body"><b>${t.name}</b><span>${t.desc}</span></div>
+      <span class="chip ${d.exported ? 'green' : has ? 'yellow' : ''}">${status}</span>
+    </div>`;
+  }).join('');
+}
+
+// ---------- collect-from-vendor tracking ----------
+function collectTrack(docId) {
+  return (((settings.collectTracking || {})[curEp?.id] || {})[docId]) || { ordered: '', received: '' };
+}
+async function saveCollectTrack(docId, track) {
+  settings.collectTracking = settings.collectTracking || {};
+  settings.collectTracking[curEp.id] = settings.collectTracking[curEp.id] || {};
+  settings.collectTracking[curEp.id][docId] = track;
+  await window.feg.saveSettings(settings);
+}
+function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+function renderCollectList() {
+  const items = (checklist?.ANCILLARY || []).filter(a => a.source === 'collect');
+  $('#collect-list').innerHTML = items.map(a => {
+    const t = collectTrack(a.id);
+    let status = 'Not ordered', cls = '';
+    let warn = '';
+    if (t.received) {
+      status = 'Received'; cls = 'green';
+      if (curEp.deliverBy) {
+        const age = daysBetween(t.received, curEp.deliverBy);
+        if (age > 60) warn = `<div class="duewarn">${ICO.warn} ${age} days before delivery date — past the 60-day freshness window, consider re-ordering.</div>`;
+      }
+    } else if (t.ordered) {
+      status = 'Ordered'; cls = 'yellow';
+    }
+    return `<div class="stage-row" style="cursor:default">
+      <span class="icon">${ICO.box}</span>
+      <div class="body"><b>${a.name}</b><span>${a.note || ''}</span>
+        <div class="row" style="margin-top:6px;gap:14px">
+          <label class="muted">Ordered <input type="date" value="${t.ordered || ''}" onchange="updateCollectDate('${a.id}','ordered',this.value)"></label>
+          <label class="muted">Received <input type="date" value="${t.received || ''}" onchange="updateCollectDate('${a.id}','received',this.value)"></label>
+        </div>
+        ${warn}
+      </div>
+      <span class="chip ${cls}">${status}</span>
+    </div>`;
+  }).join('');
+}
+
+async function updateCollectDate(docId, field, value) {
+  const t = collectTrack(docId);
+  t[field] = value;
+  await saveCollectTrack(docId, t);
+  renderCollectList();
+}
+
+function openDoc(tplId) {
+  curTpl = templates.find(t => t.id === tplId);
+  const d = docDraft(tplId);
+  $('#doc-title').textContent = curTpl.name;
+  $('#doc-desc').textContent = curTpl.desc;
+  $('#doc-status').textContent = '';
+  $('#doc-form').innerHTML = curTpl.sections.map((sec, si) => {
+    if (sec.type === 'note') return `<div class="card"><p class="muted">${sec.text}</p></div>`;
+    if (sec.type === 'fields') {
+      return `<div class="card">` + sec.fields.map(f => {
+        const v = (d.fields[f.k] || '').replace(/"/g, '&quot;');
+        return `<label>${f.label}</label>` + (f.multi
+          ? `<textarea data-doc-field="${f.k}" style="width:100%;min-height:80px;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:7px;font:inherit">${d.fields[f.k] || ''}</textarea>`
+          : `<input type="text" data-doc-field="${f.k}" value="${v}">`);
+      }).join('') + `</div>`;
+    }
+    // table
+    const rows = d.tables[si] || [{}];
+    const header = sec.cols.map(c => `<th style="${c.w ? 'width:' + c.w : ''}">${c.label}</th>`).join('') + '<th style="width:34px"></th>';
+    const body = rows.map((row, ri) => docRowHtml(sec, si, row)).join('');
+    return `<div class="card"><h2 class="section" style="margin-top:0">${sec.label}</h2>
+      <table data-doc-table="${si}"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>
+      <button class="btn secondary small" onclick="docAddRow(${si})">＋ Add row</button></div>`;
+  }).join('');
+  go('docedit');
+}
+
+function docRowHtml(sec, si, row) {
+  return '<tr>' + sec.cols.map(c => {
+    const v = (row[c.k] || '').replace(/"/g, '&quot;');
+    return `<td><input type="text" data-doc-cell="${c.k}" value="${v}" style="padding:4px 6px;font-size:12.5px"></td>`;
+  }).join('') + `<td><button class="btn secondary small" onclick="this.closest('tr').remove(); docAutoSave()">${ICO.no}</button></td></tr>`;
+}
+
+function docAddRow(si) {
+  const sec = curTpl.sections[si];
+  const tbody = document.querySelector(`table[data-doc-table="${si}"] tbody`);
+  tbody.insertAdjacentHTML('beforeend', docRowHtml(sec, si, {}));
+}
+
+function collectDoc() {
+  const d = { fields: {}, tables: {}, exported: docDraft(curTpl.id).exported };
+  document.querySelectorAll('#doc-form [data-doc-field]').forEach(el => { if (el.value.trim()) d.fields[el.dataset.docField] = el.value; });
+  document.querySelectorAll('#doc-form table[data-doc-table]').forEach(tbl => {
+    const si = tbl.dataset.docTable;
+    const rows = [...tbl.querySelectorAll('tbody tr')].map(tr => {
+      const row = {};
+      tr.querySelectorAll('[data-doc-cell]').forEach(inp => { if (inp.value.trim()) row[inp.dataset.docCell] = inp.value; });
+      return row;
+    }).filter(r => Object.keys(r).length);
+    d.tables[si] = rows;
+  });
+  return d;
+}
+
+let docSaveTimer = null;
+function docAutoSave() {
+  clearTimeout(docSaveTimer);
+  docSaveTimer = setTimeout(async () => {
+    if (!curTpl || !curEp) return;
+    await saveDocDraft(curTpl.id, collectDoc());
+    $('#doc-savenote').textContent = 'draft saved ' + new Date().toLocaleTimeString();
+  }, 800);
+}
+document.addEventListener('input', e => { if (e.target.closest('#doc-form')) docAutoSave(); });
+
+$('#doc-back').onclick = async () => {
+  if (curTpl && curTpl.id === 'cuesheet') { await saveDocDraft('cuesheet', collectDoc()); await learnMusicLookup(); }
+  renderDocList(); go('stage');
+};
+
+function docPrintHtml(d) {
+  const se = (curEp.season != null && curEp.ep != null) ? `S${String(curEp.season).padStart(2, '0')}E${String(curEp.ep).padStart(2, '0')}` : '';
+  const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const company = settings.companyName || 'Production Company';
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const internal = !!curTpl.internal;
+  const metaRows = [
+    ['Program', curEp.show || '—'],
+    ['Episode', curEp.title],
+    ...(se ? [['Season / Episode', se]] : []),
+    ['Document Date', today],
+    ['Prepared By', company],
+  ].map(([k, v]) => `<div class="mrow"><span class="mk">${esc(k)}</span><span class="mv">${esc(v)}</span></div>`).join('');
+
+  let body = '';
+  curTpl.sections.forEach((sec, si) => {
+    if (sec.type === 'note') return;
+    if (sec.type === 'fields') {
+      sec.fields.forEach(f => {
+        if (!d.fields[f.k]) return;
+        const heading = f.heading || f.label;
+        if (f.signature) {
+          body += `<h3>${esc(heading)}</h3><div class="sigblock"><div class="sigline"></div>` +
+            `<div class="signame">${esc(d.fields[f.k])}</div></div>`;
+        } else {
+          body += `<h3>${esc(heading)}</h3><p>${esc(d.fields[f.k]).replace(/\n/g, '<br>')}</p>`;
+        }
+      });
+    } else {
+      const rows = d.tables[si] || [];
+      if (!rows.length) return;
+      body += `<h3>${esc(sec.label)}</h3><table><thead><tr>${sec.cols.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>` +
+        rows.map(r => `<tr>${sec.cols.map(c => `<td>${esc(r[c.k] || '')}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+    }
+  });
+  const kind = internal ? 'Internal — Not for Delivery' : 'Delivery Documentation';
+  const banner = internal
+    ? `<div class="internal-banner">Internal Working Document — Not for Delivery to Distributor</div>` : '';
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    @page { margin: 0; }
+    * { box-sizing: border-box; }
+    body { font: 10.5pt/1.5 "Helvetica Neue", Helvetica, Arial, sans-serif; color: #16181c; background: #fff; margin: 0; padding: 8px 6px; color-scheme: light; }
+    .bar { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2.5px solid #16181c; padding-bottom: 8px; }
+    .co { font-size: 12.5pt; font-weight: 700; letter-spacing: .04em; }
+    .kind { font-size: 7.5pt; color: #9096a0; letter-spacing: .22em; text-transform: uppercase; }
+    .internal-banner { margin-top: 12px; background: #fff4e5; color: #8a5a00; border: 1px solid #f2c675; border-radius: 6px;
+      padding: 8px 14px; font-size: 8.5pt; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; text-align: center; }
+    h1 { font-size: 19pt; font-weight: 700; letter-spacing: -.01em; margin: 22px 0 14px; }
+    .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 30px; margin: 0 0 8px; padding: 12px 14px; background: #f6f7f8; border-radius: 6px; }
+    .mrow { display: flex; gap: 10px; font-size: 9pt; }
+    .mk { color: #8a909a; min-width: 100px; text-transform: uppercase; font-size: 7.5pt; letter-spacing: .08em; padding-top: 2px; }
+    .mv { font-weight: 600; }
+    h3 { font-size: 8.5pt; letter-spacing: .14em; text-transform: uppercase; color: #5a6270; margin: 24px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #d9dce1; }
+    p { margin: 4px 0 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 8.8pt; margin: 4px 0 10px; }
+    th { text-align: left; font-size: 7.4pt; letter-spacing: .1em; text-transform: uppercase; color: #5a6270; background: #f2f3f5; padding: 6px 8px; border-bottom: 1.5px solid #c9cdd4; }
+    td { padding: 5.5px 8px; border-bottom: 1px solid #e6e8ec; vertical-align: top; }
+    tbody tr:nth-child(even) td { background: #fafbfc; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; }
+    .sigblock { margin: 6px 0 22px; }
+    .sigline { width: 300px; height: 36px; border-bottom: 1px solid #16181c; }
+    .signame { width: 300px; padding-top: 5px; font-size: 8.5pt; color: #5a6270; }
+  </style></head><body>
+  <div class="bar"><span class="co">${esc(company)}</span><span class="kind">${kind}</span></div>
+  ${banner}
+  <h1>${esc(curTpl.name.replace(/ \(internal\)$/i, ''))}</h1>
+  <div class="meta">${metaRows}</div>
+  ${body}
+  </body></html>`;
+}
+
+$('#doc-export').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#doc-status').textContent = '✖ Set the episode folder first (on the episode page).'; return; }
+  const d = collectDoc();
+  await saveDocDraft(curTpl.id, d);
+  $('#doc-status').textContent = 'Exporting…';
+  try {
+    const destDir = `${folder}/${settings.distFolderName || 'Distribution'}/06 Docs`;
+    const fname = `${curEp.title} — ${curTpl.name}`.replace(/[\\/:*?"<>|]/g, '-');
+    const se = (curEp.season != null && curEp.ep != null) ? ` S${String(curEp.season).padStart(2, '0')}E${String(curEp.ep).padStart(2, '0')}` : '';
+    const r = await window.feg.exportDoc({
+      html: docPrintHtml(d), destDir, filename: fname,
+      header: `${settings.companyName ? settings.companyName + ' · ' : ''}${curEp.title}${se} · ${curTpl.name}`,
+      footer: `${settings.companyName || ''} · ${curEp.title}${se} · ${curTpl.name} · ${new Date().toISOString().slice(0, 10)}`.replace(/^ · /, ''),
+    });
+    if (curTpl.id === 'cuesheet') await learnMusicLookup();
+    d.exported = true;
+    await saveDocDraft(curTpl.id, d);
+    $('#doc-status').textContent = `✔ ${r.format.toUpperCase()} saved: ${r.dest}` + (r.note ? ' · ' + r.note : '');
+    try { await window.feg.notionSetDropboxPath({ pageId: curEp.id, folderPath: `${folder}/${settings.distFolderName || 'Distribution'}` }); } catch (e) { /* optional */ }
+  } catch (e) {
+    $('#doc-status').textContent = '✖ ' + e.message;
+  }
+};
+
+// ---------- automation: XML / caption imports ----------
+let parsedSeq = null;
+let musicCues = [];   // detected song cues (song-level, across all audio tracks)
+const EPIDEMIC = { composer: '(per Epidemic track page)', publisher: 'Epidemic Sound AB', society: 'N/A (direct license)', usage: 'Background Instrumental' };
+
+// frames → HH:MM:SS:FF
+function framesToTC(f, tbase) {
+  const ff = f % tbase; let s = Math.floor(f / tbase);
+  const h = Math.floor(s / 3600); s %= 3600; const m2 = Math.floor(s / 60); s %= 60;
+  return [h, m2, s, ff].map(n => String(n).padStart(2, '0')).join(':');
+}
+
+// Pulls Epidemic-style metadata out of a filename when it's there ("ES_Title
+// - Composer[_stem].ext"); otherwise just uses the raw filename as the title.
+// This is enrichment only now — it never decides whether a clip IS a cue.
+function parseES(name) {
+  let base = name.replace(/\.[^.]+$/, '');
+  const isEpidemicFormat = /^ES_/i.test(base);
+  if (!isEpidemicFormat) return { title: base, composer: '', isEpidemicFormat };
+  base = base.slice(3).replace(/^\d+_/, '');
+  const m = base.match(/^(.*?) - (.*)$/);
+  if (!m) return { title: base.replace(/\s+STEMS.*$/i, '').trim(), composer: '', isEpidemicFormat };
+  return {
+    title: m[1].replace(/\s+STEMS.*$/i, '').trim(),
+    // "Audio Extracted"/"Audio Extracted_1" is Epidemic's naming for an
+    // alternate derivative of the SAME underlying song/composer — strip it
+    // so segments faded/cut across an edit share the same composer key and
+    // actually merge into one cue (hit this for real: 3 separate cues for
+    // one faded song, because "Composer" vs "Composer Audio Extracted" vs
+    // "Composer Audio Extracted_1" never matched each other).
+    composer: m[2]
+      .replace(/\s+Audio Extracted(?:_\d+)?$/i, '')
+      .replace(/_(melody|drums|bass|instruments|stems.*)$/i, '')
+      .trim(),
+    isEpidemicFormat,
+  };
+}
+
+// Epidemic's two catalogs name themselves differently: music is
+// "ES_Title - Composer", sound design/SFX is a comma-separated tag list
+// ("ES_229347_Designed, Riser, Horror 02"). Purely an informational label on
+// each clip in the selection list below ("looks like SFX") — it never checks
+// or unchecks anything; which clips are music is entirely your call.
+function looksLikeMusic(name) {
+  if (/\[music\]/i.test(name)) return true;
+  if (!/^ES_.* - /.test(name)) return false;
+  if (/- Epidemic Sound\.\w+$/i.test(name)) return false;   // ES SFX end this way
+  if (name.split(',').length >= 3) return false;             // SFX are comma-lists
+  return true;
+}
+
+// Obvious sound-design/SFX naming — woosh/glitch/boom-type hits are never
+// music, so clips whose filename contains one of these (whole word, not a
+// substring of something else) are dropped before they ever reach the
+// checklist. Distinct from `looksLikeMusic`'s Epidemic-catalog-naming guess
+// below, which is only ever an informational label, never a filter.
+// Custom letter-based boundary, not \b — \b treats "_" as a word character,
+// so it would never match e.g. "Glitch_FX_02.wav" (no boundary between "h"
+// and "_"). Filenames commonly separate words with _/-/digits/spaces, none
+// of which \b treats as a boundary the way this needs.
+const OBVIOUS_SFX_RE = /(?:^|[^a-z])(woosh|whoosh|swoosh|glitch|clicks?|ticks?|booms?|impacts?|risers?)(?:[^a-z]|$)/i;
+
+// Candidates = every clip on the CHECKED, ENABLED audio track(s) — all
+// ENABLED audio tracks are checked by default (scanned automatically), so
+// nothing needs picking unless you want to narrow it down; tracks disabled
+// in the timeline are excluded entirely (not even offered as an option) and
+// obvious SFX-named clips (woosh/glitch/boom/etc.) are filtered out before
+// display. Nothing else is pre-selected as music or skipped for you though;
+// that choice happens below in the per-clip list, which shows the track and
+// raw filename for each one so you have what you need to decide. Carries an
+// `sfxLike` hint (Epidemic's SFX catalog names itself differently than its
+// music catalog) purely as an informational label — it never checks or
+// unchecks anything on its own.
+//
+// Merging: grouped by song (title+composer) FIRST, then merged by time
+// WITHIN each group — not merged in raw timeline order. This matters
+// because the same song can occupy more than one track at once (a
+// crossfade) or get split by a straight cut with an unrelated clip's own
+// occurrence landing between its two halves in absolute time; grouping by
+// song before merging means the same-song clips only ever get compared to
+// each other, so both cases merge correctly regardless of what else is
+// interleaved with them on the timeline. Also merges stem layers
+// (_melody/_drums/_bass, stripped by parseES into the same composer key).
+// Returns [{ title, composer, file, trackIndex, trackLabel, start, end, dur (frames), sfxLike }] sorted by start.
+function buildMusicCues(seq, trackIndices) {
+  const tbase = seq.timebase || 30;
+  const raw = seq.audioTracks.filter(t => trackIndices.includes(t.index) && t.enabled !== false).flatMap(t =>
+    t.clips.filter(c => !OBVIOUS_SFX_RE.test(c.name)).map(c => ({
+      ...parseES(c.name), file: c.name, trackIndex: t.index, trackLabel: t.label,
+      start: c.start, end: c.start + c.durFrames, sfxLike: !looksLikeMusic(c.name),
+    }))
+  );
+  const bySong = new Map();
+  for (const c of raw) {
+    const key = c.title + ' ' + c.composer;
+    if (!bySong.has(key)) bySong.set(key, []);
+    bySong.get(key).push(c);
+  }
+  const merged = [];
+  for (const clips of bySong.values()) {
+    clips.sort((a, b) => a.start - b.start || a.end - b.end);
+    let cur = null;
+    for (const c of clips) {
+      // same song overlapping (crossfade across tracks) or within 2s (a cut
+      // or stem-layer split) of the running merge — extend it; otherwise
+      // this is a genuinely separate later occurrence of the same song.
+      if (cur && c.start <= cur.end + tbase * 2) {
+        cur.sfxLike = cur.sfxLike && c.sfxLike;
+        cur.end = Math.max(cur.end, c.end);
+      } else {
+        cur = { ...c };
+        merged.push(cur);
+      }
+    }
+  }
+  merged.sort((a, b) => a.start - b.start || a.end - b.end);
+  return merged.map(c => ({ ...c, dur: c.end - c.start }));
+}
+
+// Shift a sequence-relative TC up one hour so paperwork matches the delivered
+// master (program at 01:00:00:00). Only applies when the sequence starts at 00:.
+function masterTC(tc, seq, enabled) {
+  if (!enabled || !tc || !seq || !String(seq.startTC || '').startsWith('00:')) return tc;
+  const p = tc.split(':');
+  p[0] = String((+p[0] + 1) % 24).padStart(2, '0');
+  return p.join(':');
+}
+
+// Every track, in XML order, no sorting/collapsing. `defaultChecked` pre-
+// checks every row (used for audio tracks, so all of them get scanned
+// automatically) — you can still uncheck any you want excluded. One short
+// example clip name per row just to help tell tracks apart at a glance; the
+// full picture (every clip, with track + filename) is in the selection list
+// below.
+function renderTrackPicker(tracks, dataAttr, defaultChecked) {
+  if (!tracks.length) return '<span class="muted">none found</span>';
+  const rows = tracks.map(t => `<label style="display:flex;gap:8px;align-items:baseline;margin:5px 0;color:var(--text)">
+      <input type="checkbox" data-${dataAttr}="${t.index}"${defaultChecked ? ' checked' : ''}>
+      <span style="flex:1"><b>${t.label}</b> — ${t.clipCount} clip(s)<br><span class="muted" style="font-size:11px">e.g. ${t.clips[0] ? t.clips[0].name : ''}</span></span>
+    </label>`).join('');
+  return `<div style="max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px">${rows}</div>`;
+}
+
+$('#auto-xml-pick').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
+  if (!files[0]) return;
+  $('#auto-status').textContent = 'Parsing…';
+  try {
+    parsedSeq = await window.feg.parseSequenceXml(files[0]);
+    // Tracks disabled in the timeline are excluded entirely — not offered as
+    // an option, not scanned. `enabled` comes from the track's own <enabled>
+    // in the XML (lib/premxml.js), defaulting true if the tag is absent.
+    const enabledAudio = parsedSeq.audioTracks.filter(t => t.enabled !== false);
+    const disabledCount = parsedSeq.audioTracks.length - enabledAudio.length;
+    $('#auto-status').textContent = `✔ "${parsedSeq.name}" — ${enabledAudio.length} audio tracks${disabledCount ? ` (${disabledCount} disabled, excluded)` : ''} · ${parsedSeq.videoTracks.length} video tracks · ${parsedSeq.markers.length} markers`;
+    $('#auto-atracks').innerHTML = renderTrackPicker(enabledAudio, 'atrack', true);
+    $('#auto-vtracks').innerHTML = renderTrackPicker(parsedSeq.videoTracks, 'vtrack');
+    // All enabled audio tracks scanned by default — uncheck any above to exclude them.
+    musicCues = buildMusicCues(parsedSeq, enabledAudio.map(t => t.index));
+    renderSongChecklist();
+    $('#auto-tracks').style.display = 'block';
+  } catch (e) { $('#auto-status').textContent = '✖ ' + e.message; }
+};
+
+// Rebuild cues live whenever the checked music tracks change.
+document.addEventListener('change', e => {
+  if (e.target && e.target.matches && e.target.matches('[data-atrack]')) {
+    const picked = [...document.querySelectorAll('[data-atrack]:checked')].map(el => +el.dataset.atrack);
+    musicCues = buildMusicCues(parsedSeq, picked);
+    renderSongChecklist();
+  }
+});
+
+function renderSongChecklist() {
+  const tbase = parsedSeq.timebase || 30;
+  if (!musicCues.length) {
+    $('#auto-songs').innerHTML = '<span class="muted">No audio tracks checked — tick at least one track above, then pick which clips are music here.</span>';
+    return;
+  }
+  const rowsHtml = musicCues.map((c, i) => {
+    // Cue sheet timecodes are always program time (no +1 hour) — standard
+    // cue sheet convention, independent of the Lower Thirds/Textless MASTER
+    // TC toggle above.
+    const tcIn = framesToTC(c.start, tbase);
+    const parsed = c.title && c.title !== c.file.replace(/\.[^.]+$/, '')
+      ? ` <span class="muted">— parsed as "${c.title.replace(/</g,'&lt;')}"${c.composer ? ' — ' + c.composer.replace(/</g,'&lt;') : ''}</span>` : '';
+    return `<label style="display:flex;gap:9px;align-items:baseline;padding:4px 2px;border-bottom:1px solid var(--line);color:var(--text);font-size:12.5px">
+      <input type="checkbox" data-song="${i}">
+      <span style="min-width:78px;color:var(--dim);font-family:ui-monospace,monospace">${tcIn}</span>
+      <span style="min-width:110px;color:var(--dim);font-size:11px">${c.trackLabel}</span>
+      <span style="flex:1">${c.file.replace(/</g,'&lt;')}${c.sfxLike ? ` <span style="color:var(--warn)">— looks like SFX</span>` : ''}${parsed}</span>
+      <span class="muted" style="font-size:11px">${framesToTC(c.dur, tbase).slice(3)}</span>
+    </label>`;
+  }).join('');
+  $('#auto-songs').innerHTML =
+    `<div class="row" style="margin-bottom:6px"><button class="btn secondary small" id="song-all">Check all</button><button class="btn secondary small" id="song-none">Uncheck all</button><span class="muted">${musicCues.length} clip(s) on your checked track(s) · nothing pre-selected · check the ones that are music</span></div>` + rowsHtml;
+  $('#song-all').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => cb.checked = true);
+  $('#song-none').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => cb.checked = false);
+}
+$('#auto-generate').onclick = async () => {
+  if (!parsedSeq || !curEp) return;
+  const checkedSongs = [...document.querySelectorAll('[data-song]:checked')].map(el => +el.dataset.song);
+  const gfxIdx = [...document.querySelectorAll('[data-vtrack]:checked')].map(el => +el.dataset.vtrack);
+  const lookup = settings.musicLookup || {};
+  let made = [];
+
+  // --- Music Cue Sheet draft (from CHECKED song cues) ---
+  // Always program time (no +1 hour) — standard cue sheet convention,
+  // independent of the Lower Thirds/Textless MASTER TC toggle above.
+  if (checkedSongs.length) {
+    const tbase = parsedSeq.timebase || 30;
+    const rows = checkedSongs.map((idx, i) => {
+      const c = musicCues[idx];
+      const known = lookup[c.title] || lookup[c.file] || {};
+      // Only default composer/publisher to Epidemic when the filename was
+      // actually recognized as Epidemic's own "ES_Title - Composer" naming
+      // — defaulting EVERY unrecognized clip to Epidemic shipped a wrong
+      // publisher for real once (Soundly's "SBA-..." files got labeled
+      // Epidemic Sound AB). Unrecognized clips get "NA" instead, so it's
+      // obviously incomplete rather than confidently wrong — society/usage
+      // stay on the shared default since "direct license, background
+      // instrumental" is true for every stock library this show uses, not
+      // just Epidemic specifically.
+      return {
+        num: String(i + 1), title: c.title,
+        composer: known.composer || c.composer || (c.isEpidemicFormat ? EPIDEMIC.composer : 'NA'),
+        publisher: known.publisher || (c.isEpidemicFormat ? EPIDEMIC.publisher : 'NA'),
+        society: known.society || EPIDEMIC.society,
+        usage: known.usage || EPIDEMIC.usage,
+        dur: framesToTC(c.dur, tbase),
+        tcin: framesToTC(c.start, tbase),
+        tcout: framesToTC(c.end, tbase),
+      };
+    });
+    const tpl = templates.find(t => t.id === 'cuesheet');
+    const si = tpl.sections.findIndex(s => s.type === 'table');
+    const d = docDraft('cuesheet'); d.tables[si] = rows; d.exported = false;
+    curTpl = tpl; await saveDocDraft('cuesheet', d); curTpl = null;
+    made.push(`Cue Sheet (${rows.length} cues)`);
+  }
+
+  // --- Lower Thirds + Textless logs from graphics tracks + name-pattern matches on ALL video tracks ---
+  let patternRe = null;
+  const patternStr = ($('#auto-pattern').value || '').trim();
+  if (patternStr) { try { patternRe = new RegExp(patternStr, 'i'); } catch (e) { patternRe = null; } }
+  if (gfxIdx.length || patternRe) {
+    const fromTracks = parsedSeq.videoTracks.filter(t => gfxIdx.includes(t.index)).flatMap(t => t.clips);
+    const fromPattern = patternRe
+      ? parsedSeq.videoTracks.filter(t => !gfxIdx.includes(t.index)).flatMap(t => t.clips).filter(c => patternRe.test(c.name))
+      : [];
+    const seen = new Set();
+    const gfx = [...fromTracks, ...fromPattern]
+      .filter(c => { const k = c.name + '@' + c.start; if (seen.has(k)) return false; seen.add(k); return true; })
+      .sort((a, b) => a.start - b.start);
+    if (!gfx.length) {
+      $('#auto-gen-status').textContent = (made.length ? '✔ Drafted: ' + made.join(' · ') + ' — but ' : '') + 'no graphics clips found via tracks or name pattern.';
+      renderDocList(); return;
+    }
+    const useMTC2 = $('#auto-mtc').checked;
+    const ltTpl = templates.find(t => t.id === 'lowerthirds');
+    let si = ltTpl.sections.findIndex(s => s.type === 'table');
+    let d = docDraft('lowerthirds');
+    d.tables[si] = gfx.map(c => ({ tc: masterTC(c.tcIn, parsedSeq, useMTC2), text: c.name, desc: '' }));
+    d.exported = false;
+    curTpl = ltTpl; await saveDocDraft('lowerthirds', d);
+    const txTpl = templates.find(t => t.id === 'textlesslog');
+    si = txTpl.sections.findIndex(s => s.type === 'table');
+    d = docDraft('textlesslog');
+    d.tables[si] = gfx.map(c => ({ tc: masterTC(c.tcIn, parsedSeq, useMTC2), desc: c.name, covered: '' }));
+    d.exported = false;
+    curTpl = txTpl; await saveDocDraft('textlesslog', d); curTpl = null;
+    made.push(`Lower Thirds Log & Textless Log (${gfx.length} items)`);
+  }
+
+  $('#auto-gen-status').textContent = made.length
+    ? `✔ Drafted: ${made.join(' · ')} — open them below to review. Fill any "composer?" once; the app remembers each track.`
+    : 'Nothing selected — check at least one song cue (or a graphics track).';
+  renderDocList();
+};
+
+// remember music metadata edits per track title (so repeats auto-fill next time)
+async function learnMusicLookup() {
+  const d = docDraft('cuesheet');
+  const tpl = templates.find(t => t.id === 'cuesheet');
+  const si = tpl.sections.findIndex(s => s.type === 'table');
+  const rows = d.tables[si] || [];
+  settings.musicLookup = settings.musicLookup || {};
+  rows.forEach(r => {
+    if (r.title) settings.musicLookup[r.title] = { composer: r.composer, publisher: r.publisher, society: r.society, usage: r.usage };
+  });
+  await window.feg.saveSettings(settings);
+}
+
+// --- Captions → As-Broadcast Script draft ---
+$('#auto-cap-pick').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Captions', extensions: ['scc', 'srt', 'vtt'] }] });
+  if (!files[0]) return;
+  $('#auto-status').textContent = 'Parsing captions…';
+  try {
+    const events = await window.feg.parseCaptions(files[0]);
+    const tpl = templates.find(t => t.id === 'abscript');
+    const si = tpl.sections.findIndex(s => s.type === 'table');
+    const d = docDraft('abscript');
+    d.tables[si] = events.map(ev => ({ tc: ev.tc, speaker: '', text: ev.text }));
+    d.exported = false;
+    curTpl = tpl; await saveDocDraft('abscript', d); curTpl = null;
+    $('#auto-status').textContent = `✔ As-Broadcast Script drafted from ${events.length} caption events — open it below to add speakers & action lines.`;
+    renderDocList();
+  } catch (e) { $('#auto-status').textContent = '✖ ' + e.message; }
+};
+
+// --- Markers → Segment Timings CSV + sheet ---
+$('#auto-xml-pick2').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#auto-status2').textContent = '✖ Set the episode folder first (on the episode page).'; return; }
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
+  if (!files[0]) return;
+  $('#auto-status2').textContent = 'Parsing…';
+  try {
+    const seq = await window.feg.parseSequenceXml(files[0]);
+    if (!seq.markers.length) { $('#auto-status2').textContent = '✖ No sequence markers found. Add markers at segment boundaries in Premiere and re-export.'; return; }
+    // Build segments: markers with duration → in/out; otherwise pair consecutive markers
+    let segs = [];
+    const useMTC = $('#auto-mtc2').checked;
+    const durMarkers = seq.markers.filter(m => m.outFrame > m.inFrame);
+    if (durMarkers.length) {
+      segs = durMarkers.map(m => ({ in: masterTC(m.tcIn, seq, useMTC), out: masterTC(m.tcOut, seq, useMTC) }));
+    } else {
+      for (let i = 0; i < seq.markers.length - 1; i += 1) {
+        segs.push({ in: masterTC(seq.markers[i].tcIn, seq, useMTC), out: masterTC(seq.markers[i + 1].tcIn, seq, useMTC) });
+      }
+    }
+    const toF = tc => tc.split(':').reduce((a, v) => a * (a >= 3600 ? 1 : 60) + +v, 0); // not frame-exact; use frames below instead
+    const tb = seq.timebase;
+    const frames = tc => { const [h, m2, s, f] = tc.split(':').map(Number); return ((h * 3600 + m2 * 60 + s) * tb) + f; };
+    const fmtF = fr => { const f = fr % tb; let s = Math.floor(fr / tb); const h = Math.floor(s / 3600); s %= 3600; const m2 = Math.floor(s / 60); s %= 60; return [h, m2, s, f].map(n => String(n).padStart(2, '0')).join(':'); };
+    const csv = 'Marker Name,Description,In,Out,Duration,Marker Type\n' +
+      segs.map(s => `,,${s.in},${s.out},${fmtF(frames(s.out) - frames(s.in))},Comment`).join('\n');
+    const destDir = `${folder}/${settings.distFolderName || 'Distribution'}/05 Segment Timings`;
+    const dest = await window.feg.writeTextFile({ content: csv, destDir, filename: `${curEp.title} Segment Timings.csv`.replace(/[\\/:*?"<>|]/g, '-') });
+    // also draft the human-readable sheet
+    const tpl = templates.find(t => t.id === 'segsheet');
+    const si = tpl.sections.findIndex(s => s.type === 'table');
+    const d = docDraft('segsheet');
+    d.tables[si] = segs.map((s, i) => ({ seg: String(i + 1), tcin: s.in, tcout: s.out, dur: fmtF(frames(s.out) - frames(s.in)), desc: '' }));
+    curTpl = tpl; await saveDocDraft('segsheet', d); curTpl = null;
+    try { await window.feg.notionSetAsset({ pageId: curEp.id, asset: 'Segment Timings', status: 'In progress' }); curEp.assets['Segment Timings'] = 'In progress'; } catch (e) { /* optional */ }
+    $('#auto-status2').textContent = `✔ ${segs.length} segments → CSV written to ${dest}. Verify frame-accuracy against the master, then drop the CSV above to QC & mark Ready.`;
+  } catch (e) { $('#auto-status2').textContent = '✖ ' + e.message; }
+};
+
+// ---------- Render Farm ----------
+let fxAeps = [];
+let fxSelected = new Set(); // indices into fxAeps — persists as you move between type groups
+let fxGroupView = null; // null = showing the type grid; a group key = drilled into that type
+window.feg.onFarmProgress(msg => { $('#fx-run-status').textContent = msg; });
+
+// The Insanity Extension's own 11 official naming-template categories
+// (insanity-premiere/src/core/naming.ts) — kept in sync with that file by hand.
+const NAMING_TEMPLATES = [
+  { id: 'pc', label: 'PC', prefix: 'PC' },
+  { id: 'doc', label: 'Doc', prefix: 'DOC' },
+  { id: 'geo', label: 'Gearth', prefix: 'GEO' },
+  { id: 'sat', label: 'Sat', prefix: 'SAT' },
+  { id: 'qt', label: 'Quote', prefix: 'QT' },
+  { id: 'pv', label: 'Photoviewer', prefix: 'PV' },
+  { id: 'ss', label: 'Splitscreen', prefix: 'SS' },
+  { id: 'cd', label: 'Countdown', prefix: 'CD' },
+  { id: 'pe', label: 'Photo Evidence', prefix: 'PE' },
+  { id: 'ch', label: 'Charges', prefix: 'CH' },
+  { id: 'intro', label: 'Intro', prefix: 'INTRO' },
+];
+
+// One icon per official category, plus a fallback for everything else. Kept
+// in the same minimal stroke-icon style as the rest of the app (20x20,
+// currentColor) so a type tile doesn't look like it wandered in from
+// somewhere else.
+const TYPE_ICO = {
+  pc: '<svg class="ico" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="8" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="9.5" y="4" width="8" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/><line x1="10" y1="4" x2="10" y2="16" stroke="currentColor" stroke-width="1.4"/></svg>',
+  doc: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M6 3h6l3 3v11a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 3v3h3" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><line x1="7" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1"/><line x1="7" y1="13" x2="13" y2="13" stroke="currentColor" stroke-width="1.1"/></svg>',
+  geo: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M10 17s6-5.5 6-10a6 6 0 10-12 0c0 4.5 6 10 6 10z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><circle cx="10" cy="7" r="2.1" stroke="currentColor" stroke-width="1.4"/></svg>',
+  sat: '<svg class="ico" viewBox="0 0 20 20" fill="none"><rect x="8" y="8" width="4" height="4" rx="0.6" stroke="currentColor" stroke-width="1.4"/><rect x="1.6" y="7.6" width="4" height="4.8" rx="0.6" stroke="currentColor" stroke-width="1.2" transform="rotate(-32 3.6 10)"/><rect x="14.4" y="7.6" width="4" height="4.8" rx="0.6" stroke="currentColor" stroke-width="1.2" transform="rotate(32 16.4 10)"/><line x1="10" y1="8" x2="10" y2="4.5" stroke="currentColor" stroke-width="1.3"/><circle cx="10" cy="3.3" r="0.9" fill="currentColor"/></svg>',
+  qt: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M5 6.5c-1.4 0-2.5 1.2-2.5 3s1.1 3 2.5 3c0-2.1.6-3.7 2-4.7V6.5H5z" fill="currentColor"/><path d="M12.5 6.5c-1.4 0-2.5 1.2-2.5 3s1.1 3 2.5 3c0-2.1.6-3.7 2-4.7V6.5h-2z" fill="currentColor"/></svg>',
+  pv: '<svg class="ico" viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="12" rx="1.3" stroke="currentColor" stroke-width="1.4"/><circle cx="7.3" cy="8.3" r="1.3" stroke="currentColor" stroke-width="1.2"/><path d="M4 14l4-4 3 3 3-3.5 3 4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  ss: '<svg class="ico" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4" width="7" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="10.5" y="4" width="7" height="12" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>',
+  cd: '<svg class="ico" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.4"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  pe: '<svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M7 3a2 2 0 00-1.4.6L3 6.2a2 2 0 000 2.8l7 7a2 2 0 002.8 0l4.2-4.2a2 2 0 000-2.8l-7-7A2 2 0 007 3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="7.4" cy="7.4" r="1.3" stroke="currentColor" stroke-width="1.2"/></svg>',
+  ch: '<svg class="ico" viewBox="0 0 20 20" fill="none"><rect x="10.4" y="3.4" width="4" height="7.6" rx="0.8" stroke="currentColor" stroke-width="1.3" transform="rotate(45 12.4 7.2)"/><line x1="8.7" y1="8.9" x2="4.3" y2="13.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="3" y1="16" x2="9" y2="16" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  intro: '<svg class="ico" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.4" stroke="currentColor" stroke-width="1.4"/><path d="M8.4 6.8l5 3.2-5 3.2V6.8z" fill="currentColor"/></svg>',
+  custom: ICO.box,
+};
+
+// Matches a scanned AEP's filename against the 11 official naming-template
+// categories above — checked against both the short prefix ("PV") and the
+// spelled-out label ("Photoviewer"), since real projects use either. Checked
+// against the raw filename AND with a leading editor-initial ("K_", "S_")
+// stripped, since that's the real-world convention, not the formal one.
+// Anything matching neither is 'custom' — expected for most real filenames,
+// since most graphic types in this show (Lower Thirds, OnWall, Blackout…)
+// predate or aren't part of the 11-category system at all.
+function classifyAep(filePath) {
+  const base = filePath.split(/[\\/]/).pop().replace(/\.aep$/i, '');
+  const candidates = [base, base.replace(/^[A-Za-z]+_/, '')];
+  const matchesToken = (s, token) => new RegExp('^' + token.replace(/\s+/g, '') + '(?:[_\\-\\d]|$)', 'i').test(s);
+  for (const cand of candidates) {
+    for (const tpl of NAMING_TEMPLATES) {
+      if (matchesToken(cand, tpl.prefix) || matchesToken(cand, tpl.label)) return tpl.id;
+    }
+  }
+  return 'custom';
+}
+function classifyLabel(id) {
+  const tpl = NAMING_TEMPLATES.find(t => t.id === id);
+  return tpl ? tpl.label : 'Custom';
+}
+function fxGroups() {
+  const groups = {};
+  fxAeps.forEach((p, i) => { const k = classifyAep(p); (groups[k] = groups[k] || []).push(i); });
+  return groups;
+}
+
+function renderFxAeps() {
+  $('#fx-selection-bar').style.display = fxAeps.length ? '' : 'none';
+  $('#fx-selected-count').textContent = `${fxSelected.size} selected`;
+  const groups = fxGroups();
+
+  if (fxGroupView === null) {
+    // Recognized categories first (alphabetical by label), "Custom" always last
+    // — it's the leftover bucket, not a type on equal footing with the rest.
+    const keys = Object.keys(groups).sort((a, b) => {
+      if (a === 'custom') return 1;
+      if (b === 'custom') return -1;
+      return classifyLabel(a).localeCompare(classifyLabel(b));
+    });
+    $('#fx-aeps').innerHTML = keys.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:10px">${keys.map(key => {
+          const idxs = groups[key];
+          const selCount = idxs.filter(i => fxSelected.has(i)).length;
+          return `<button type="button" class="btn secondary fx-group-tile" data-group="${key}" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px;width:130px;height:auto">
+            <span style="font-size:26px;color:var(--dim)">${TYPE_ICO[key] || TYPE_ICO.custom}</span>
+            <span style="color:var(--text);font-size:13px;text-align:center;white-space:normal">${classifyLabel(key)}</span>
+            <span class="muted" style="font-size:11px">${selCount}/${idxs.length} selected</span>
+          </button>`;
+        }).join('')}</div>`
+      : '<span class="muted">No .aep files under that folder.</span>';
+    document.querySelectorAll('.fx-group-tile').forEach(el => {
+      el.onclick = () => { fxGroupView = el.dataset.group; renderFxAeps(); };
+    });
+  } else {
+    const idxs = groups[fxGroupView] || [];
+    $('#fx-aeps').innerHTML =
+      `<div class="row" style="margin-bottom:6px;align-items:center">
+        <button class="btn secondary small" id="fx-group-back">← All types</button>
+        <b style="color:var(--text)">${classifyLabel(fxGroupView)}</b>
+        <span class="muted">(${idxs.length})</span>
+      </div>` +
+      idxs.map(i => `<label style="display:flex;gap:8px;align-items:center;margin:3px 0;color:var(--text)"><input type="checkbox" data-aep="${i}" ${fxSelected.has(i) ? 'checked' : ''}> <span class="filepath">${fxAeps[i]}</span></label>`).join('');
+    $('#fx-group-back').onclick = () => { fxGroupView = null; renderFxAeps(); };
+    document.querySelectorAll('[data-aep]').forEach(el => {
+      el.onchange = () => {
+        const idx = +el.dataset.aep;
+        if (el.checked) fxSelected.add(idx); else fxSelected.delete(idx);
+        $('#fx-selected-count').textContent = `${fxSelected.size} selected`;
+      };
+    });
+  }
+}
+
+$('#fx-select-all').onclick = () => {
+  const idxs = fxGroupView === null ? fxAeps.map((_, i) => i) : (fxGroups()[fxGroupView] || []);
+  idxs.forEach(i => fxSelected.add(i));
+  renderFxAeps();
+};
+$('#fx-select-none').onclick = () => {
+  const idxs = fxGroupView === null ? fxAeps.map((_, i) => i) : (fxGroups()[fxGroupView] || []);
+  idxs.forEach(i => fxSelected.delete(i));
+  renderFxAeps();
+};
+
+$('#fx-scan').onclick = async () => {
+  const root = await window.feg.pickDirectory();
+  if (!root) return;
+  $('#fx-scan-status').textContent = 'Scanning…';
+  try {
+    fxAeps = await window.feg.scanAeps(root);
+    fxSelected = new Set(fxAeps.map((_, i) => i));
+    fxGroupView = null;
+    $('#fx-scan-status').textContent = `${fxAeps.length} AE project(s) found`;
+    renderFxAeps();
+    $('#fx-run-texted').style.display = fxAeps.length ? '' : 'none';
+    $('#fx-run-textless').style.display = fxAeps.length ? '' : 'none';
+    $('#fx-run-both').style.display = fxAeps.length ? '' : 'none';
+  } catch (e) { $('#fx-scan-status').textContent = '✖ ' + e.message; }
+};
+
+$('#fx-stop').onclick = async () => {
+  await window.feg.farmCancelBatch();
+  $('#fx-run-status').textContent = 'Stopping after the current project…';
+};
+
+async function runFarmBatch(mode) {
+  const picked = [...fxSelected].sort((a, b) => a - b).map(i => fxAeps[i]);
+  if (!picked.length) return;
+  const format = $('#fx-format').value;
+  $('#fx-run-texted').disabled = true;
+  $('#fx-run-textless').disabled = true;
+  $('#fx-run-both').disabled = true;
+  $('#fx-stop').style.display = '';
+  $('#fx-results').innerHTML = '';
+  try {
+    const results = await window.feg.farmSendBatch(picked, mode, format);
+    $('#fx-results').innerHTML = results.map(r =>
+      `<div class="filepath" style="margin:3px 0">${r.error
+        ? `<span style="color:var(--fail)">${ICO.no}</span> ${r.aep || ''} — ${r.error}`
+        : r.skipped
+          ? `<span style="color:var(--warn)">${ICO.skip}</span> ${(r.aep || '').split('/').pop()} <span class="muted">— skipped, no text found</span>`
+          : `<span style="color:var(--pass)">${ICO.ok}</span> queued as "${r.row}" (${r.mode}) <span class="muted">(${(r.aep || '').split('/').pop()})</span>`}</div>`).join('');
+    const ok = results.filter(r => !r.error && !r.skipped).length;
+    const skipped = results.filter(r => r.skipped).length;
+    $('#fx-run-status').textContent = `Done — ${ok} queued, ${skipped} skipped (no text), ${results.length - ok - skipped} failed.`;
+  } catch (e) { $('#fx-run-status').textContent = '✖ ' + e.message; }
+  $('#fx-run-texted').disabled = false;
+  $('#fx-run-textless').disabled = false;
+  $('#fx-run-both').disabled = false;
+  $('#fx-stop').style.display = 'none';
+}
+$('#fx-run-texted').onclick = () => runFarmBatch('texted');
+$('#fx-run-textless').onclick = () => runFarmBatch('textless');
+$('#fx-run-both').onclick = () => runFarmBatch('both');
+
+$('#fx-clean').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
+  if (!files[0]) return;
+  $('#fx-clean-status').textContent = 'Building clean sequence…';
+  try {
+    const pattern = ($('#auto-pattern') ? $('#auto-pattern').value : '') || 'TXT|LT_|LOWER|TITLE|CHYRON|PHOTOVIEWER|SPLITSCREEN|COUNTDOWN|GEARTH|QUOTE|INTRO|BLACKOUT|ONWALL|EVIDENCE|TECHTEXT|VIDEOBOX|(?:^|[_ -])(GEO|SAT)(?:[_ \d-]|$)|_(DEFAULT|ALPHA)(_TEXTLESS)?\.MOV$';
+    const r = await window.feg.makeCleanXml({ xmlPath: files[0], pattern });
+    $('#fx-clean-status').textContent = `✔ Saved: ${r.outPath.split(/[\\/]/).pop()}`;
+    $('#fx-clean-report').innerHTML = r.disabled.length
+      ? `<b style="color:var(--pass)">Disabled ${r.disabled.length} graphic clip type(s):</b> ${r.disabled.slice(0, 25).join(' · ')}${r.disabled.length > 25 ? ' …' : ''}<br>Import this XML, check the timeline shows no graphics, then export as your clean plate.`
+      : 'No graphics matched the name pattern — adjust the pattern field above (Paperwork stage) and retry.';
+  } catch (e) { $('#fx-clean-status').textContent = '✖ ' + e.message; }
+};
+
+$('#fx-xml').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
+  if (!files[0]) return;
+  $('#fx-xml-status').textContent = 'Rewriting…';
+  try {
+    const r = await window.feg.makeTextlessXml({ xmlPath: files[0], pattern: ($('#auto-pattern') ? $('#auto-pattern').value : '') || 'TXT|LT_|LOWER|TITLE|CHYRON|PHOTOVIEWER|SPLITSCREEN|COUNTDOWN|GEARTH|QUOTE|INTRO|BLACKOUT|ONWALL|EVIDENCE|TECHTEXT|VIDEOBOX|(?:^|[_ -])(GEO|SAT)(?:[_ \d-]|$)|_(DEFAULT|ALPHA)(_TEXTLESS)?\.MOV$' });
+    $('#fx-xml-status').textContent = `✔ Saved: ${r.outPath}`;
+    $('#fx-xml-report').innerHTML =
+      (r.replaced.length ? `<b style="color:var(--pass)">Swapped ${r.replaced.length}:</b> ${r.replaced.join(' · ')}<br>` : 'No clips were swapped — check naming/pattern or run Step 1 first.<br>') +
+      (r.missing.length ? `<b style="color:var(--warn)">⚠ Matched but no _TEXTLESS render found (${r.missing.length}):</b> ${r.missing.join(' · ')} — render these in Step 1, then re-run.` : '');
+  } catch (e) { $('#fx-xml-status').textContent = '✖ ' + e.message; }
+};
+
+// ---------- Guided Mode ----------
+let guideSteps = [];
+(async () => { guideSteps = await window.feg.guideDefs(); })();
+
+function guideState() {
+  return ((settings.guideDone || {})[curEp?.id]) || [];
+}
+async function saveGuideState(doneIds) {
+  settings.guideDone = settings.guideDone || {};
+  settings.guideDone[curEp.id] = doneIds;
+  await window.feg.saveSettings(settings);
+}
+
+function updateGuideProgressLabel() {
+  const done = guideState().length;
+  $('#ep-guide-progress').textContent = done ? `${done}/${guideSteps.length} steps complete` : '';
+}
+
+$('#ep-guide').onclick = () => { renderGuide(); go('guide'); };
+$('#guide-back').onclick = () => { updateGuideProgressLabel(); renderStages(); go('episode'); };
+
+function renderGuide() {
+  const done = guideState();
+  const idx = guideSteps.findIndex(s => !done.includes(s.id));
+  const cur = idx === -1 ? null : guideSteps[idx];
+  $('#guide-title').textContent = curEp.title;
+  $('#guide-count').textContent = `${done.length}/${guideSteps.length} complete`;
+  $('#guide-bar').style.width = Math.round(done.length / guideSteps.length * 100) + '%';
+
+  // completed (collapsed)
+  $('#guide-done-list').innerHTML = guideSteps.slice(0, idx === -1 ? guideSteps.length : idx).map((s, i) =>
+    `<div class="row" style="padding:5px 12px;color:var(--dim);font-size:12.5px">
+      <span style="color:var(--pass)">${ICO.ok}</span> <span>${i + 1}. ${s.title}</span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn secondary small" onclick="guideUndo('${s.id}')">undo</button>
+    </div>`).join('');
+
+  // current step (big)
+  if (cur) {
+    $('#guide-current').style.display = 'block';
+    $('#guide-current').innerHTML =
+      `<div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px">${cur.phase} — step ${idx + 1} of ${guideSteps.length}</div>
+      <h2 style="font-size:18px;margin:6px 0 10px">${cur.title}</h2>
+      <p style="margin-bottom:14px">${cur.body}</p>
+      ${cur.svg ? `<div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px 10px;margin-bottom:14px">${cur.svg}</div>` : ''}
+      <div class="row">
+        ${cur.stage ? `<button class="btn secondary" onclick="guideGoStage('${cur.stage}')">Open the tool for this step →</button>` : ''}
+        <button class="btn" onclick="guideDone('${cur.id}')">✓ Done — next step</button>
+      </div>`;
+  } else {
+    $('#guide-current').style.display = 'block';
+    $('#guide-current').innerHTML = `<h2 style="font-size:18px;display:flex;align-items:center;gap:8px"><svg class="ico" style="width:20px;height:20px;color:var(--pass)" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10l2.5 2.5 4.5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> All ${guideSteps.length} steps complete</h2>
+      <p class="muted">This episode is fully through the pipeline. Set it Distribution Ready on the Deliver stage if you haven't.</p>`;
+  }
+
+  // locked upcoming (preview only)
+  $('#guide-locked').innerHTML = (idx === -1 ? [] : guideSteps.slice(idx + 1)).map((s, i) =>
+    `<div class="row" style="padding:5px 12px;color:var(--dim);font-size:12.5px;opacity:.55">
+      <span class="ico" style="width:12px;height:12px"><svg viewBox="0 0 20 20" fill="none"><rect x="4" y="9" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M7 9V6a3 3 0 016 0v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span> <span>${idx + 2 + i}. ${s.title}</span>
+    </div>`).join('');
+}
+
+async function guideDone(id) {
+  const done = guideState();
+  if (!done.includes(id)) done.push(id);
+  await saveGuideState(done);
+  renderGuide();
+}
+async function guideUndo(id) {
+  const s = guideSteps.find(x => x.id === id);
+  const sIdx = guideSteps.indexOf(s);
+  // undoing a step also unlocks it and everything after it
+  const done = guideState().filter(d => guideSteps.findIndex(g => g.id === d) < sIdx);
+  await saveGuideState(done);
+  renderGuide();
+}
+function guideGoStage(stageId) {
+  const i = stages.findIndex(s => s.id === stageId);
+  if (i >= 0) openStage(i);
+}
+
+// ---------- Stem Assembler ----------
+const stemFiles = { full: null, dx: null, mx: null, fx: null, narr: null };
+let stemsOutDir = null;
+let embeddedFrameRate = null;
+window.feg.onStemProgress(m => $('#stem-status').textContent = m);
+
+document.querySelectorAll('[data-stem]').forEach(btn => btn.onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'WAV', extensions: ['wav'] }] });
+  if (!files[0]) return;
+  stemFiles[btn.dataset.stem] = files[0];
+  $('#stem-' + btn.dataset.stem).textContent = files[0].split(/[\\/]/).pop();
+  $('#stem-build').disabled = !(stemFiles.full && stemFiles.dx && stemFiles.mx && stemFiles.fx);
+});
+
+$('#stem-build').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#stem-status').textContent = '✖ Set the episode folder first.'; return; }
+  $('#stem-build').disabled = true;
+  try {
+    stemsOutDir = `${folder}/${settings.distFolderName || 'Distribution'}/03 Audio Stems/16-Track`;
+    const r = await window.feg.stemsBuild({ ...stemFiles, outDir: stemsOutDir });
+    $('#stem-status').innerHTML = `✔ ${r.files.length} tracks built → ${stemsOutDir}` +
+      (r.warnings.length ? `<br><span style="color:var(--warn)">⚠ ${r.warnings.join('<br>⚠ ')}</span>` : '');
+    $('#stem-embed').disabled = false;
+    $('#stem-pad').disabled = false;
+    try { await window.feg.notionSetAsset({ pageId: curEp.id, asset: 'Audio Stems', status: 'In progress' }); curEp.assets['Audio Stems'] = 'In progress'; } catch (e) { /* optional */ }
+  } catch (e) { $('#stem-status').textContent = '✖ ' + e.message; }
+  $('#stem-build').disabled = false;
+};
+
+$('#stem-embed').onclick = async () => {
+  if (!stemsOutDir) return;
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Program video', extensions: ['mov'] }] });
+  if (!files[0]) return;
+  $('#stem-embed').disabled = true;
+  try {
+    const out = files[0].replace(/\.mov$/i, '') + '_16TRK.mov';
+    const r = await window.feg.stemsEmbed({ video: files[0], stemsDir: stemsOutDir, output: out });
+    embeddedFrameRate = r.frameRate || null;
+    $('#stem-status').textContent = `✔ 16-track program master: ${r.output} ${r.warning || ''} — QC it on the Texted Master stage, then Build broadcast master from it.`;
+  } catch (e) { $('#stem-status').textContent = '✖ ' + e.message; }
+  $('#stem-embed').disabled = false;
+};
+
+$('#stem-pad').onclick = async () => {
+  if (!stemsOutDir) return;
+  $('#stem-pad').disabled = true;
+  try {
+    const outDir = stemsOutDir.replace(/16-Track$/, 'Master-Aligned Sidecars');
+    const r = await window.feg.stemsPad({ stemsDir: stemsOutDir, outDir, originator: settings.companyName || 'Production Company', frameRate: embeddedFrameRate || undefined });
+    $('#stem-status').textContent = `✔ ${r.files.length} master-aligned sidecars → ${outDir}`;
+    try { await window.feg.notionSetAsset({ pageId: curEp.id, asset: 'Audio Stems', status: 'Ready' }); curEp.assets['Audio Stems'] = 'Ready'; } catch (e) { /* optional */ }
+  } catch (e) { $('#stem-status').textContent = '✖ ' + e.message; }
+  $('#stem-pad').disabled = false;
+};
+
+// ---------- caption retiming ----------
+$('#cap-retime').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Captions', extensions: ['scc', 'srt', 'vtt'] }] });
+  if (!files[0]) return;
+  try {
+    const dest = await window.feg.retimeCaptions(files[0]);
+    $('#cap-retime-status').textContent = '✔ Saved: ' + dest.split(/[\\/]/).pop() + ' — now drop that file through the intake above.';
+  } catch (e) { $('#cap-retime-status').textContent = '✖ ' + e.message; }
+};
+
+// ---------- OCR textless verification ----------
+let ocrFile = null;
+window.feg.onOcrProgress(msg => $('#ocr-status').textContent = msg);
+$('#ocr-pick').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Video', extensions: ['mov', 'mp4', 'mxf'] }] });
+  if (files[0]) { ocrFile = files[0]; $('#ocr-run').disabled = false; $('#ocr-status').textContent = ocrFile.split(/[\\/]/).pop(); }
+};
+$('#ocr-run').onclick = async () => {
+  if (!ocrFile) return;
+  $('#ocr-run').disabled = true;
+  $('#ocr-report').innerHTML = '';
+  try {
+    const r = await window.feg.verifyTextless({
+      file: ocrFile,
+      intervalSec: +$('#ocr-interval').value,
+      ignoreTopPct: $('#ocr-top').checked ? 15 : 0,
+      ignoreBottomPct: $('#ocr-bottom').checked ? 10 : 0,
+    });
+    $('#ocr-status').textContent = `Done — ${r.checkedFrames} frames scanned, ${r.hits.length} text region(s) found.`;
+    $('#ocr-report').innerHTML = r.hits.length
+      ? `<table><thead><tr><th style="width:90px">From</th><th style="width:90px">To</th><th style="width:60px">Conf.</th><th>Detected text (review — could be leftover graphic OR bodycam OSD)</th></tr></thead><tbody>` +
+        r.hits.map(h => `<tr><td>${h.tc}</td><td>${h.tcEnd}</td><td>${h.confidence}%</td><td>${h.text.replace(/</g, '&lt;')}</td></tr>`).join('') + '</tbody></table>'
+      : `<p class="muted">${ICO.ok} No text detected outside the ignored strips — textless looks clean.</p>`;
+  } catch (e) {
+    $('#ocr-status').textContent = '✖ ' + e.message;
+  }
+  $('#ocr-run').disabled = false;
+};
+
+// ---------- settings ----------
+$('#set-save').onclick = async () => {
+  const token = $('#set-token').value.trim(), dbId = $('#set-db').value.trim();
+  $('#set-status').textContent = 'Testing…';
+  try {
+    const r = await window.feg.notionTest({ token, dbId });
+    settings.notionToken = token; settings.notionDb = dbId;
+    await window.feg.saveSettings(settings);
+    $('#set-status').textContent = `✔ Connected to "${r.title}"`;
+    await refreshDashboard();
+    go('dashboard');
+  } catch (e) { $('#set-status').textContent = '✖ ' + e.message; }
+};
+$('#set-save2').onclick = async () => {
+  settings.distFolderName = $('#set-distname').value.trim() || 'Distribution';
+  settings.companyName = $('#set-company').value.trim();
+  await window.feg.saveSettings(settings);
+  $('#set-status2').textContent = '✔ Saved';
+};
+$('#set-farm-save').onclick = async () => {
+  settings.farmRelayUrl = $('#set-relay-url').value.trim();
+  settings.farmRelayToken = $('#set-relay-token').value.trim();
+  settings.dropboxLocalAnchor = $('#set-dbx-anchor').value.trim() || 'Insanity Media Dropbox';
+  await window.feg.saveSettings(settings);
+  $('#set-farm-status').textContent = '✔ Saved';
+};
+</script>
+</body>
+</html>
