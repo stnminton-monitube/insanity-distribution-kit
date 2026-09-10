@@ -77,7 +77,8 @@ Installers from GitHub Releases do not require Node.js or developer tools.
 If SmartScreen appears because this internal trial is not code-signed, choose
 **More info → Run anyway** only when the file came from this repository.
 
-**macOS:** Download the latest DMG, open it, and drag the app to Applications.
+**macOS:** Download the Apple Silicon DMG for M-series Macs or the Intel DMG
+for older Intel Macs. Open it and drag the app to Applications.
 If macOS blocks the unsigned internal trial, Control-click the app, choose
 **Open**, then confirm.
 

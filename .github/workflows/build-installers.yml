@@ -17,8 +17,12 @@ jobs:
         include:
           - os: macos-latest
             command: npm run dist:mac
-            artifact: Insanity-Distribution-Kit-macOS
+            artifact: Insanity-Distribution-Kit-macOS-Apple-Silicon
             full_test: true
+          - os: macos-15-intel
+            command: npm run dist:mac:intel
+            artifact: Insanity-Distribution-Kit-macOS-Intel
+            full_test: false
           - os: windows-latest
             command: npm run dist:win
             artifact: Insanity-Distribution-Kit-Windows
@@ -37,11 +41,10 @@ jobs:
         run: npm test
       - if: matrix.full_test == false
         name: Cross-platform syntax checks
-        shell: pwsh
         run: |
           node --check main.js
           node --check preload.js
-          Get-ChildItem lib/*.js | ForEach-Object { node --check $_.FullName }
+          node -e "const fs=require('fs'),cp=require('child_process'); for(const f of fs.readdirSync('lib').filter(f=>f.endsWith('.js'))) cp.execFileSync(process.execPath,['--check','lib/'+f],{stdio:'inherit'})"
       - run: ${{ matrix.command }}
       - uses: actions/upload-artifact@v4
         with:
