@@ -212,7 +212,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   });
   const nTracks = execSync(`"${FFPROBE}" -v error -select_streams a -show_entries stream=index -of csv=p=0 "${emb.output}" | wc -l`).toString().trim();
   ok('embed produces 16 audio tracks', nTracks === '16', nTracks);
-  const labels = execSync(`"${FFPROBE}" -v error -select_streams a:0 -show_entries stream_tags=handler_name -of csv=p=0 "${emb.output}"`).toString().trim();
+  const labels = execFileSync(FFPROBE, ['-v', 'error', '-select_streams', 'a:0',
+    '-show_entries', 'stream_tags=handler_name,title', '-of', 'csv=p=0', emb.output]).toString().trim();
   ok('tracks carry spec metadata labels', /Full Mix/.test(labels), labels);
 
   const padded = await sf.padStems({

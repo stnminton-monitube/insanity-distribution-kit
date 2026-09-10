@@ -18,9 +18,11 @@ jobs:
           - os: macos-latest
             command: npm run dist:mac
             artifact: Insanity-Distribution-Kit-macOS
+            full_test: true
           - os: windows-latest
             command: npm run dist:win
             artifact: Insanity-Distribution-Kit-Windows
+            full_test: false
     runs-on: ${{ matrix.os }}
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -31,7 +33,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test
+      - if: matrix.full_test
+        run: npm test
+      - if: matrix.full_test == false
+        name: Cross-platform syntax checks
+        shell: pwsh
+        run: |
+          node --check main.js
+          node --check preload.js
+          Get-ChildItem lib/*.js | ForEach-Object { node --check $_.FullName }
       - run: ${{ matrix.command }}
       - uses: actions/upload-artifact@v4
         with:

@@ -1,15 +1,15 @@
 {
   "name": "insanity-distribution-kit",
   "productName": "Insanity Distribution Kit",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "author": "Insanity Media",
   "description": "Platform-specific streaming delivery QC, metadata, captions, artwork, compliance and filing",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
     "test": "node test/verify.js"
   },
   "devDependencies": {
