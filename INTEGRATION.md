@@ -1,8 +1,13 @@
-# Integrating the Distribution toolkit into the Insanity extension
+# Historical integration proposal — do not implement without re-verification
+
+> **Stale as of 2026-09-09.** This proposal assumed the UXP extension was the
+> live Premiere panel. Direct inspection found the CEP extension was actually
+> installed and in use. The extension lives in a separate repository and may
+> change again; verify the live host and architecture there before reviving any
+> phase below. This file is retained only as planning history.
 
 Based on inspection of `insanity-extension-main` (June 2026 snapshot).
-**This supersedes PORTING-TO-CEP.md, which was written before seeing the repo
-and assumed CEP. The target is UXP.**
+It no longer supersedes current host verification.
 
 ---
 

@@ -2,11 +2,12 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Media Distribution Toolkit</title>
+<title>Insanity Distribution Kit</title>
 <style>
   :root {
-    --bg: #14171c; --panel: #1d2129; --panel2: #242a35; --line: #313947;
-    --text: #e8ebef; --dim: #9aa4b2; --accent: #4c8dff;
+    --bg: #0f131a; --panel: #191f29; --panel2: #222a37; --line: #303b4d;
+    --text: #edf2f8; --dim: #9ca8b9; --accent: #5b91ff;
+    --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
     /* pass/warn were measured colorblind-unsafe (protanopia ΔE 5.2, below the 8
        safety target) — replaced with a validated pair (ΔE 11.3+) that also holds
        WCAG AA text contrast on --bg (5.35:1 / 9.79:1). fail/accent already passed
@@ -15,7 +16,7 @@
     --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
   }
   * { box-sizing: border-box; margin: 0; }
-  body { font: 14px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  body { font: 14px/1.55 -apple-system, "Segoe UI", Roboto, sans-serif; background: radial-gradient(circle at 50% -20%, #1b2940 0, var(--bg) 42%) fixed; color: var(--text); -webkit-font-smoothing: antialiased; }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; border: 2px solid var(--bg); }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -24,23 +25,24 @@
   .btn { transition: filter .12s ease, transform .08s ease; }
   .btn:not(:disabled):hover { filter: brightness(1.12); }
   .btn:not(:disabled):active { transform: scale(.97); }
-  .card { box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .card { box-shadow: 0 10px 30px rgba(0,0,0,.16), 0 1px 2px rgba(0,0,0,.28); }
   .ep-card, .stage-row { transition: border-color .12s ease, transform .12s ease, box-shadow .12s ease; }
   .ep-card:hover, .stage-row:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.3); }
-  input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+  input[type=text]:focus, input[type=password]:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
   #guide-bar { transition: width .35s ease; }
-  header { padding: 14px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 14px; position: sticky; top: 0; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); z-index: 10; }
-  header h1 { font-size: 16px; cursor: pointer; }
+  header { min-height:64px; padding: 14px 26px; border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent); display: flex; align-items: center; gap: 14px; position: sticky; top: 0; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px); z-index: 10; box-shadow:0 8px 30px rgba(0,0,0,.13); }
+  header h1 { font-size: 16px; cursor: pointer; letter-spacing:-.01em; display:flex; align-items:center; gap:10px; }
+  .brand-icon { width:30px; height:30px; object-fit:contain; }
   header .crumb { color: var(--dim); font-size: 13px; }
   header .spacer { flex: 1; }
-  main { padding: 20px 22px; max-width: 1080px; margin: 0 auto; }
+  main { padding: 28px 26px 52px; max-width: 1120px; margin: 0 auto; }
   .view { display: none; } .view.active { display: block; }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 14px; }
-  .btn { background: var(--accent); border: none; color: #fff; padding: 8px 16px; border-radius: 7px; cursor: pointer; font-size: 13.5px; }
-  .btn.secondary { background: var(--panel2); border: 1px solid var(--line); color: var(--text); }
-  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .card { background: linear-gradient(180deg,color-mix(in srgb,var(--panel) 96%,#fff 4%),var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 21px; margin-bottom: 16px; }
+  .btn { min-height:36px; background: linear-gradient(180deg,#6a9cff,var(--accent)); border: 1px solid color-mix(in srgb,var(--accent) 78%,#fff); color: #fff; padding: 8px 16px; border-radius: 9px; cursor: pointer; font-size: 13.5px; font-weight:600; box-shadow:0 4px 12px rgba(48,102,210,.22); }
+  .btn.secondary { background: color-mix(in srgb,var(--panel2) 92%,#fff 8%); border: 1px solid var(--line); color: var(--text); box-shadow:none; }
+  .btn.small { min-height:30px; padding: 4px 11px; font-size: 12px; border-radius:8px; }
   .btn:disabled { opacity: .45; cursor: default; }
-  .drop { border: 2px dashed var(--line); border-radius: 10px; padding: 28px; text-align: center; color: var(--dim); cursor: pointer; margin: 14px 0; }
+  .drop { border: 2px dashed color-mix(in srgb,var(--accent) 38%,var(--line)); border-radius: 12px; padding: 32px; text-align: center; color: var(--dim); cursor: pointer; margin: 16px 0; background:color-mix(in srgb,var(--accent) 4%,var(--panel2)); transition:.15s ease; }
   .drop.over { border-color: var(--accent); color: var(--text); }
   table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
   th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -50,21 +52,22 @@
   .lv.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
   .lv.fail { background: color-mix(in srgb, var(--fail) 18%, transparent); color: var(--fail); }
   .lv.info { background: color-mix(in srgb, var(--info) 18%, transparent); color: var(--info); }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); color: var(--dim); }
+  .chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 650; border: 1px solid var(--line); color: var(--dim); background:rgba(8,11,16,.2); white-space:nowrap; }
   .chip.green { color: var(--pass); border-color: var(--pass); }
   .chip.red { color: var(--fail); border-color: var(--fail); }
   .chip.yellow { color: var(--warn); border-color: var(--warn); }
   .chip.blue { color: var(--accent); border-color: var(--accent); }
   .fix { color: var(--dim); font-size: 12.5px; }
   label { display: block; font-size: 12.5px; color: var(--dim); margin: 10px 0 3px; }
-  input[type=text], select { width: 100%; background: var(--panel2); border: 1px solid var(--line); color: var(--text); padding: 7px 10px; border-radius: 7px; font-size: 13.5px; }
+  input[type=text], input[type=password], select { width: 100%; min-height:38px; background: color-mix(in srgb,var(--panel2) 94%,#000); border: 1px solid var(--line); color: var(--text); padding: 8px 11px; border-radius: 9px; font-size: 13.5px; }
+  textarea.settings-area { width:100%; min-height:88px; resize:vertical; background:color-mix(in srgb,var(--panel2) 94%,#000); border:1px solid var(--line); color:var(--text); padding:9px 11px; border-radius:9px; font:13px/1.45 var(--font-mono); }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
   .muted { color: var(--dim); font-size: 12.5px; }
   .filepath { font-family: var(--font-mono); font-size: 12px; color: var(--dim); word-break: break-all; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
   .stats { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 16px; }
+  .stat { min-width:118px; background: linear-gradient(145deg,color-mix(in srgb,var(--panel) 94%,#fff 6%),var(--panel)); border: 1px solid var(--line); border-radius: 12px; padding: 11px 16px; box-shadow:0 7px 22px rgba(0,0,0,.12); }
   .stat b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 19px; letter-spacing: -.02em; display: block; }
   .stat span { color: var(--dim); font-size: 11.5px; }
   .fbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -72,33 +75,109 @@
   .fbar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
   .duewarn { color: var(--fail); font-weight: 600; font-size: 12px; }
   .dueok { color: var(--dim); font-size: 12px; }
-  .ep-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; cursor: pointer; }
+  .ep-card { background: linear-gradient(145deg,color-mix(in srgb,var(--panel) 95%,#fff 5%),var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 18px; cursor: pointer; box-shadow:0 8px 26px rgba(0,0,0,.14); }
   .ep-card:hover { border-color: var(--accent); }
   .ep-card h3 { font-size: 15px; margin-bottom: 4px; }
   .dots { display: flex; gap: 5px; margin-top: 10px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
   .dot.green { background: var(--pass); } .dot.red { background: var(--fail); }
   .dot.yellow { background: var(--warn); } .dot.blue { background: var(--accent); }
-  .stage-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
-  .stage-row:hover { border-color: var(--accent); }
-  .stage-row .num { color: var(--dim); font-size: 12px; width: 18px; }
+  .mini-progress { height:6px; overflow:hidden; border-radius:6px; background:var(--panel2); margin-top:7px; }
+  .mini-progress span { display:block; height:100%; border-radius:inherit; background:var(--accent); }
+  .stage-row { display: flex; align-items: center; gap: 15px; padding: 16px 18px; background: linear-gradient(100deg,color-mix(in srgb,var(--panel) 96%,#fff 4%),var(--panel)); border: 1px solid var(--line); border-radius: 13px; margin-bottom: 11px; cursor: pointer; box-shadow:0 6px 18px rgba(0,0,0,.11); }
+  .stage-row:hover { border-color: color-mix(in srgb,var(--accent) 72%,var(--line)); transform:translateX(3px); }
+  .stage-row .num { display:grid; place-items:center; color:#cfe0ff; font-size:11px; font-weight:700; width:27px; height:27px; border-radius:9px; background:var(--accent-soft); border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line)); flex-shrink:0; }
+  .stage-row.optional-tool { background: color-mix(in srgb,var(--panel) 74%,var(--panel2)); border-style:dashed; box-shadow:none; }
+  .stage-row.optional-tool .num { width: 38px; height:22px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 6px; background:var(--panel2); color:var(--dim); font-size: 9px; letter-spacing: .5px; }
   .stage-row .icon { display: inline-flex; width: 20px; height: 20px; flex-shrink: 0; color: var(--dim); }
   .icon svg { width: 100%; height: 100%; display: block; }
   .ico { width: 1em; height: 1em; vertical-align: -0.15em; display: inline-block; flex-shrink: 0; }
   .stage-row .body { flex: 1; }
-  .stage-row .body b { display: block; }
+  .stage-row .body b { display: block; font-size:14.5px; letter-spacing:-.005em; }
   .stage-row .body span { color: var(--dim); font-size: 12.5px; }
   .details h2 { font-size: 15px; margin: 16px 0 8px; color: var(--text); }
   .details ul, .details ol { margin: 6px 0 6px 22px; }
   .details li { margin: 3px 0; }
   .details p { margin: 6px 0; }
   .details table { margin: 10px 0; }
-  h2.section { font-size: 14px; margin: 18px 0 8px; color: var(--dim); text-transform: uppercase; letter-spacing: .4px; }
+  h2.section { font-size: 12px; margin: 20px 0 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .85px; }
+  .platform-strip { margin-top: 16px; padding: 15px; border: 1px solid color-mix(in srgb,var(--accent) 65%,var(--line)); border-radius: 12px; background: linear-gradient(135deg,color-mix(in srgb,var(--accent) 13%,var(--panel2)),color-mix(in srgb,var(--accent) 5%,var(--panel))); box-shadow:inset 0 1px rgba(255,255,255,.035); }
+  .platform-strip select { max-width: 330px; }
+  .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 16px; }
+  .field-grid .wide { grid-column: 1 / -1; }
+  .field-grid textarea, .compliance-grid textarea { width: 100%; min-height: 76px; resize: vertical; background: var(--panel2); border: 1px solid var(--line); color: var(--text); padding: 8px 10px; border-radius: 7px; font: inherit; }
+  .field-error { min-height: 17px; color: var(--fail); font-size: 11.5px; }
+  .sheet-toolbar { position: sticky; top: 58px; z-index: 5; padding: 10px; margin: 0 -4px 10px; background: color-mix(in srgb, var(--panel) 94%, transparent); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  .art-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px, 1fr)); gap: 10px; }
+  .art-slot { padding: 15px; border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(145deg,color-mix(in srgb,var(--panel2) 95%,#fff 5%),var(--panel2)); }
+  .art-slot.required { border-left: 3px solid var(--accent); }
+  .gate-group { margin: 13px 0; padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: color-mix(in srgb,var(--panel2) 94%,#000); }
+  .gate-item { display: flex; align-items: flex-start; gap: 9px; padding: 7px 3px; color: var(--text); }
+  .gate-item.manual span::first-line { color: var(--warn); }
+  .optional-divider { display:flex;align-items:center;gap:12px;color:var(--dim);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:30px 0 13px; }
+  .optional-divider::before,.optional-divider::after { content:"";height:1px;background:var(--line);flex:1; }
+  .plain-path { margin-top:11px; padding:11px 13px; border-radius:9px; background:color-mix(in srgb,var(--panel2) 90%,#000); border-left:3px solid var(--accent); color:color-mix(in srgb,var(--text) 88%,var(--dim)); }
+  .cue-page-head { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
+  .cue-page-head .spacer { flex:1; }
+  .cue-page-head h2 { font-size:22px; line-height:1.2; letter-spacing:-.025em; }
+  .cue-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:0 0 16px; }
+  .cue-step { display:flex; gap:9px; align-items:center; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel); color:var(--dim); font-size:11.5px; }
+  .cue-step b { display:grid; place-items:center; flex:0 0 23px; height:23px; border-radius:50%; background:var(--panel2); color:var(--text); }
+  .cue-step.active { border-color:color-mix(in srgb,var(--accent) 65%,var(--line)); background:var(--accent-soft); color:var(--text); }
+  .cue-format-note { padding:10px 12px; border-radius:9px; background:color-mix(in srgb,var(--accent) 8%,var(--panel2)); border-left:3px solid var(--accent); }
+  .cue-workspace { display:grid; grid-template-columns:minmax(230px,280px) minmax(0,1fr); gap:14px; align-items:start; }
+  .cue-sidebar { position:sticky; top:82px; }
+  .cue-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin:0 0 14px; }
+  .cue-metric { padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); }
+  .cue-metric b { display:block; font:700 18px/1.2 var(--font-mono); }
+  .cue-metric span { color:var(--dim); font-size:11px; }
+  .cue-scope-grid { margin:10px 0 16px; }
+  .cue-scope-grid details { border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:color-mix(in srgb,var(--panel2) 85%,transparent); }
+  .cue-scope-grid summary { cursor:pointer; font-weight:650; }
+  .cue-review-head { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; padding-top:15px; border-top:1px solid var(--line); }
+  .cue-controls { display:flex; gap:7px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+  .cue-controls input { width:240px; }
+  .cue-controls select { width:145px; }
+  .cue-list { max-height:560px; overflow-y:auto; margin-top:10px; padding-right:4px; }
+  .cue-card { display:grid; grid-template-columns:auto 1fr auto; gap:11px; align-items:start; padding:12px 13px; margin-bottom:8px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); }
+  .cue-card:hover, .cue-card.active { border-color:color-mix(in srgb,var(--accent) 75%,var(--line)); background:color-mix(in srgb,var(--accent) 8%,var(--panel2)); }
+  .cue-card input[type=checkbox] { margin-top:4px; accent-color:var(--accent); }
+  .cue-title { font-weight:700; color:var(--text); }
+  .cue-meta { color:var(--dim); font-size:11.5px; margin-top:3px; }
+  .cue-files { margin-top:6px; color:var(--dim); font-size:11px; }
+  .cue-files summary { cursor:pointer; }
+  .cue-time { text-align:right; font:12px/1.45 var(--font-mono); color:var(--dim); white-space:nowrap; }
+  .cue-empty { padding:22px; text-align:center; color:var(--dim); border:1px dashed var(--line); border-radius:10px; }
+  .cue-timeline { display:block; margin:12px 0 16px; padding:12px; border:1px solid var(--line); border-radius:11px; background:#121720; overflow-x:auto; }
+  .tl-ruler { position:relative; height:23px; margin-left:126px; border-bottom:1px solid var(--line); color:var(--dim); font:10px var(--font-mono); }
+  .tl-ruler span { position:absolute; top:0; transform:translateX(-50%); }
+  .tl-ruler span:first-child { transform:none; }
+  .tl-ruler span:last-child { transform:translateX(-100%); }
+  .tl-track { display:grid; grid-template-columns:116px minmax(620px,1fr); gap:10px; align-items:center; min-height:32px; padding:2px 0; border-radius:5px; transition:background .14s,opacity .14s; }
+  .tl-track.active-track { background:rgba(91,145,255,.09); }
+  .tl-track.dimmed-track { opacity:.28; }
+  .tl-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--dim); font-size:10.5px; text-align:right; }
+  .tl-lane { position:relative; height:21px; border-radius:4px; background:repeating-linear-gradient(90deg,transparent 0,transparent calc(25% - 1px),rgba(255,255,255,.045) 25%); }
+  .tl-clip { position:absolute; top:3px; height:15px; min-width:3px; border-radius:3px; background:#485467; opacity:.48; cursor:pointer; transition:opacity .14s,transform .14s,background .14s,box-shadow .14s; }
+  .tl-clip.music { background:var(--accent); opacity:.72; }
+  .tl-clip.active { opacity:1; transform:scaleY(1.28); background:#8bb2ff; box-shadow:0 0 12px color-mix(in srgb,var(--accent) 65%,transparent); z-index:2; }
+  @media (max-width: 760px) {
+    .field-grid, .grid2 { grid-template-columns: 1fr; }
+    .cue-steps { grid-template-columns:repeat(2,1fr); }
+    .cue-workspace { grid-template-columns:1fr; }
+    .cue-sidebar { position:static; }
+    .cue-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .cue-review-head { align-items:stretch; flex-direction:column; }
+    .cue-controls { justify-content:flex-start; }
+    .cue-controls input { width:min(100%,240px); }
+    .cue-card { grid-template-columns:auto 1fr; }
+    .cue-time { grid-column:2; text-align:left; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1 onclick="go('dashboard')">Media Distribution Toolkit</h1>
+  <h1 onclick="go('dashboard')"><img class="brand-icon" src="../assets/icon.png" alt="" title="Insanity Kit">Insanity Distribution Kit</h1>
   <span class="crumb" id="crumb"></span>
   <span class="spacer"></span>
   <button class="btn secondary small" onclick="go('dashboard')"><svg class="ico" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6M5 8v8a1 1 0 001 1h8a1 1 0 001-1V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg> Dashboard</button>
@@ -153,6 +232,11 @@
       <button class="btn secondary small" id="ep-open-folder" style="display:none">Open</button>
     </div>
     <p class="muted" style="margin-top:6px">Pick this episode's own Dropbox folder. Files you drop into stages get filed into a "<span id="ep-distname">Distribution</span>" subfolder inside it, and the path is written to Notion.</p>
+    <div class="platform-strip">
+      <div class="row"><b>Delivery requirements</b><select id="ep-platform"></select><span class="chip blue" id="ep-platform-badge"></span></div>
+      <p class="muted" id="ep-platform-summary" style="margin-top:7px"></p>
+      <p class="plain-path" id="ep-platform-use"></p>
+    </div>
     <div class="row" style="margin-top:12px">
       <button class="btn secondary small" id="ep-make-checklist">Create Notion checklist</button>
       <span class="muted" id="ep-checklist-status"></span>
@@ -188,6 +272,26 @@
     <span class="chip" id="st-chip"></span>
   </div>
   <div class="card details" id="st-details"></div>
+  <div class="card" id="st-profile" style="display:none"></div>
+  <div class="card" id="st-metadata" style="display:none">
+    <div class="sheet-toolbar row"><b>18-column episode metadata</b><span class="spacer" style="flex:1"></span><span class="chip" id="meta-score"></span><button class="btn secondary small" id="meta-copy">Copy row</button><button class="btn small" id="meta-export">Export CSV</button></div>
+    <div class="field-grid" id="metadata-fields"></div>
+    <div class="muted" id="meta-status" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="st-artwork" style="display:none">
+    <h2 class="section" style="margin-top:0">Artwork slots</h2><div class="art-grid" id="art-slots"></div><div class="muted" id="art-status" style="margin-top:10px"></div>
+  </div>
+  <div class="card" id="st-compliance" style="display:none">
+    <div class="plain-path" id="comp-guidance"></div>
+    <div class="field-grid compliance-grid">
+      <div class="wide"><label>Ad-break / chapter timecodes <span class="muted">(one HH:MM:SS:FF per line; enter N/A when none apply)</span></label><textarea id="comp-breaks"></textarea></div>
+      <div><label>Sponsor / integrated-ad review notes</label><textarea id="comp-sponsor"></textarea></div>
+      <div><label>CTA / URL / promo review notes</label><textarea id="comp-cta"></textarea></div>
+    </div><div class="row" style="margin-top:10px"><button class="btn" id="comp-none">Nothing present — mark all N/A</button><button class="btn secondary" id="comp-save">Save detailed review</button><span class="muted" id="comp-status"></span></div>
+  </div>
+  <div class="card" id="st-gates" style="display:none">
+    <h2 class="section" style="margin-top:0">Completion gates</h2><p class="muted">MANUAL items require a person to inspect the finished assets. The app never silently treats them as passed.</p><div id="gate-list"></div>
+  </div>
   <div class="card" id="st-intake" style="display:none">
     <h2 class="section" style="margin-top:0">Process a file</h2>
     <div class="drop" id="st-drop">Drop file(s) here, or click to choose</div>
@@ -198,8 +302,8 @@
     </div>
   </div>
   <div class="card" id="st-build" style="display:none">
-    <h2 class="section" style="margin-top:0">Build broadcast master (optional)</h2>
-    <p class="muted" id="st-build-note">Wraps the checked file with the broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Skip this if your distributor wants a clean program-only file.</p>
+    <h2 class="section" style="margin-top:0">Build broadcast master from a program-only export</h2>
+    <p class="muted" id="st-build-note">Adds the required broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Do not run this on a file that already has the required head/tail.</p>
     <div class="grid2">
       <div><label>Show code (for slate)</label><input type="text" id="st-showcode"></div>
       <div><label>Production company</label><input type="text" id="st-prodco"></div>
@@ -215,21 +319,15 @@
   <div class="card" id="st-auto" style="display:none">
     <h2 class="section" style="margin-top:0">Auto-draft from your edit</h2>
     <div id="auto-paperwork" style="display:none">
-      <p class="muted">In Premiere: click the timeline, then <b>File → Export → Final Cut Pro XML</b> on your final sequence, and load it here. Every audio and video track shows up below — nothing is pre-picked. Tick which audio track(s) to pull from, then every clip on those tracks appears underneath with its track and filename so you can check off which ones are actually music. Tick video tracks that are graphics/titles the same way. It drafts the <b>Music Cue Sheet</b>, <b>Lower Thirds Log</b>, and <b>Textless Materials Log</b>. Load your caption file to draft the <b>As-Broadcast Script</b>.</p>
+      <div class="plain-path"><b>Music has its own review workspace now.</b><br><span class="muted">Load the Premiere XML, see every detected song on a timeline, confirm the cue list, then create the draft.</span><div style="margin-top:10px"><button class="wrapped btn" id="open-cue-builder">Open Music Cue Builder →</button></div></div>
+      <p class="mutFinder muted" style="margin-top:15px"><b>Other paperwork drafts:</b> load the same XML here for Lower Thirds and Textless Materials logs, or load captions for an As-Broadcast Script.</p>
       <div class="row" style="margin-top:8px">
-        <button class="btn secondary" id="auto-xml-pick">Load sequence XML…</button>
+        <button class="btn secondary" id="auto-graphics-pick">Load XML for graphics logs…</button>
         <button class="btn secondary" id="auto-cap-pick">Load captions (.scc/.srt) → script draft</button>
         <span class="muted" id="auto-status"></span>
       </div>
       <div id="auto-tracks" style="display:none">
-        <div class="grid2" style="margin-top:12px">
-          <div><label>Which AUDIO tracks are MUSIC? (all scanned by default — uncheck any to exclude)</label><div id="auto-atracks"></div></div>
-          <div><label>Which VIDEO tracks are GRAPHICS/TITLES?</label><div id="auto-vtracks"></div></div>
-        </div>
-        <div style="margin-top:12px">
-          <label>Clips on your checked track(s) — check the ones that are music, skip the rest:</label>
-          <div id="auto-songs" style="max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:4px"></div>
-        </div>
+        <div class="cue-scope-grid"><details open><summary>Video tracks for graphics logs</summary><p class="muted">Select any track dedicated to graphics. The filename pattern below also catches matching graphics on every other video track.</p><div id="auto-vtracks"></div></details></div>
         <label style="margin-top:12px">Also flag texted clips on ANY video track by name (for baked-in AE renders — separate patterns with |)</label>
         <input type="text" id="auto-pattern" value="TXT|LT_|LOWER|TITLE|CHYRON|PHOTOVIEWER|SPLITSCREEN|COUNTDOWN|GEARTH|QUOTE|INTRO|BLACKOUT|ONWALL|EVIDENCE|TECHTEXT|VIDEOBOX|(?:^|[_ -])(GEO|SAT)(?:[_ \d-]|$)|_(DEFAULT|ALPHA)(_TEXTLESS)?\.MOV$">
         <p class="muted" style="margin-top:4px">Any video clip whose filename matches gets added to the Lower Thirds & Textless logs, whatever track it's on — this same pattern also decides which clips get swapped when building the textless sequence, below. The default already covers this show's real graphic types (Lower Thirds, Photoviewer, OnWall, Blackout, etc.) and — the durable part — matches any render farm output by its <code>_Default</code>/<code>_Alpha</code> filename suffix, so a brand new graphic type gets caught automatically without ever touching this field. Add more terms with <code>|</code> only if something's still getting missed.</p>
@@ -237,7 +335,7 @@
           <input type="checkbox" id="auto-mtc" checked> Write Lower Thirds/Textless log timecodes as MASTER timecode (program starts at 01:00:00:00) — keep this on if your sequence starts at 00:00:00:00. The Music Cue Sheet always uses program time (no +1 hour), matching standard cue sheet convention.
         </label>
         <div class="row" style="margin-top:12px">
-          <button class="btn" id="auto-generate">Generate drafts</button>
+          <button class="btn" id="auto-generate">Generate graphics logs</button>
           <span class="muted" id="auto-gen-status"></span>
         </div>
       </div>
@@ -359,6 +457,47 @@
   </div>
 </section>
 
+<!-- ================= MUSIC CUE BUILDER ================= -->
+<section class="view" id="view-cues">
+  <div class="cue-page-head">
+    <button class="btn secondary small" id="cue-back">← Back to Paperwork</button>
+    <div><h2>Music Cue Builder</h2><p class="muted">Turn a Premiere sequence XML into a reviewable music cue-sheet draft.</p></div>
+    <span class="spacer"></span>
+    <button class="btn secondary" id="auto-xml-pick">Load / replace XML…</button>
+  </div>
+  <div class="cue-steps">
+    <div class="cue-step active" data-cue-step="1"><b>1</b><span><strong>Load XML</strong><br>Export from Premiere</span></div>
+    <div class="cue-step" data-cue-step="2"><b>2</b><span><strong>Review tracks</strong><br>All enabled by default</span></div>
+    <div class="cue-step" data-cue-step="3"><b>3</b><span><strong>Confirm cues</strong><br>Check music and timing</span></div>
+    <div class="cue-step" data-cue-step="4"><b>4</b><span><strong>Create draft</strong><br>Finish rights details</span></div>
+  </div>
+  <div class="card" id="cue-intro">
+    <h2 class="section" style="margin-top:0">Start with the finished edit</h2>
+    <p>In Premiere, choose <b>File → Export → Final Cut Pro XML</b>, then load that XML here.</p>
+    <div class="cue-format-note muted" style="margin-top:12px"><b>Simple rule:</b> only <b>.wav</b> and <b>.mp3</b> clips can become music cues. MP4s and every other file type are skipped automatically. Known sound effects are removed too.</div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="cue-start-pick">Choose sequence XML…</button><span class="muted" id="cue-intro-status"></span></div>
+  </div>
+  <div id="cue-workspace" style="display:none">
+    <div class="cue-summary" id="auto-cue-summary"></div>
+    <div class="cue-workspace">
+      <aside class="card cue-sidebar">
+        <h2 class="section" style="margin-top:0">Tracks being scanned</h2>
+        <p class="muted">Every enabled audio track starts on. Turn off a dialogue-only track if needed. Hover a row to spotlight that lane.</p>
+        <div id="auto-atracks" style="margin-top:12px"></div>
+        <div class="cue-format-note muted" style="margin-top:14px">This list does not mean every clip is music. It only controls where the app looks.</div>
+      </aside>
+      <div class="card">
+        <div class="row"><div><h2 class="section" style="margin:0">Music timeline and cue review</h2><p class="muted">Hover either a cue or a blue timeline clip to find the matching pieces.</p></div><span class="spacer" style="flex:1"></span><span class="chip" id="cue-sequence-name"></span></div></div>
+        <div id="auto-songs"></div>
+        <div class="row" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+          <button class="btn" id="cue-generate">Create Music Cue Sheet draft</button>
+          <span class="muted" id="cue-gen-status">Checked cues will be copied into the editable cue sheet.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= DOC EDITOR ================= -->
 <section class="view" id="view-docedit">
   <div class="row" style="margin-bottom:12px">
@@ -384,7 +523,7 @@
   <div class="card">
     <h2 class="section" style="margin-top:0">Notion connection</h2>
     <p class="muted">1) notion.so/profile/integrations → New integration → copy the secret. 2) On your <b>Media Distribution Hub</b> page: ⋯ → Connections → add it. 3) Paste below. Stored only on this computer.</p>
-    <label>Integration token</label><input type="text" id="set-token" placeholder="ntn_… or secret_…">
+    <label>Integration token</label><input type="password" id="set-token" autocomplete="off" placeholder="ntn_… or secret_…">
     <label>Distribution Catalog database link or ID</label><input type="text" id="set-db">
     <div class="row" style="margin-top:12px">
       <button class="btn" id="set-save">Save & test</button>
@@ -400,12 +539,21 @@
     <div class="row" style="margin-top:12px"><button class="btn" id="set-save2">Save</button><span class="muted" id="set-status2"></span></div>
   </div>
   <div class="card">
+    <h2 class="section" style="margin-top:0">Music cue detection</h2>
+    <p class="muted">Every filename found in these folders is treated as sound effects and removed before the music-review list appears. Add one folder per line. Timeline pieces of the same song separated by no more than the merge gap become one cue.</p>
+    <label>Sound-effects exclusion folders</label>
+    <textarea class="settings-area" id="set-sfx-dirs"></textarea>
+    <label>Merge same-song cuts separated by up to this many seconds</label>
+    <input type="text" id="set-music-gap" style="max-width:120px" inputmode="numeric">
+    <div class="row" style="margin-top:12px"><button class="btn" id="set-music-save">Save cue settings</button><span class="muted" id="set-music-status"></span></div>
+  </div>
+  <div class="card">
     <h2 class="section" style="margin-top:0">Render Farm</h2>
     <p class="muted">The Render Farm stage queues each AE project on the render farm through one shared relay — this app never holds a Notion or Dropbox credential itself. It disables text layers locally when needed (the only part that has to happen on this machine), converts the file's local path to a Dropbox path, and sends a request to the relay below, which does the rest.</p>
     <label>Relay URL <span class="muted">(where the render farm relay is hosted)</span></label>
     <input type="text" id="set-relay-url" placeholder="https://your-relay.example.com">
     <label>Relay token</label>
-    <input type="text" id="set-relay-token" placeholder="shared extension token">
+    <input type="password" id="set-relay-token" autocomplete="off" placeholder="shared extension token">
     <label>Dropbox local folder anchor <span class="muted">(the Dropbox team folder name as it appears in Finder, used to convert a local file path into a Dropbox path)</span></label>
     <input type="text" id="set-dbx-anchor" placeholder="Insanity Media Dropbox">
     <div class="row" style="margin-top:12px"><button class="btn" id="set-farm-save">Save</button><span class="muted" id="set-farm-status"></span></div>
@@ -415,7 +563,10 @@
 </main>
 <script>
 const $ = s => document.querySelector(s);
+const escHtml = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 let settings = {}, stages = [], episodes = [], curEp = null, curStage = null;
+let musicDefaults = { exclusionDirs: [], gapSeconds: 5 };
+let distribution = { fields: [], subgenres: [], profiles: {}, gates: [] };
 let checkedFiles = []; // [{path, results, ok}]
 
 // Small inline status icons — replaces the ✔/✖/⚠ dingbats in HTML-inserted (innerHTML)
@@ -436,8 +587,10 @@ const ASSET_SUCCESS = { video: 'QC Passed', wav: 'Ready', timings: 'Ready', ext:
 function go(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   $('#view-' + view).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
   $('#crumb').textContent = view === 'episode' && curEp ? curEp.title
-    : view === 'stage' && curStage ? `${curEp ? curEp.title + ' · ' : ''}${curStage.name}` : '';
+    : view === 'stage' && curStage ? `${curEp ? curEp.title + ' · ' : ''}${curStage.name}`
+    : view === 'cues' ? `${curEp ? curEp.title + ' · ' : ''}Music Cue Builder` : '';
 }
 
 function chipClass(status) {
@@ -450,7 +603,9 @@ function chipClass(status) {
 // ---------- init ----------
 (async () => {
   settings = await window.feg.loadSettings();
+  musicDefaults = await window.feg.musicCueDefaults();
   stages = await window.feg.stageDefs();
+  distribution = await window.feg.distributionDefs();
   $('#set-token').value = settings.notionToken || '';
   $('#set-db').value = settings.notionDb || '';
   $('#set-distname').value = settings.distFolderName || 'Distribution';
@@ -458,6 +613,8 @@ function chipClass(status) {
   $('#set-relay-url').value = settings.farmRelayUrl || '';
   $('#set-relay-token').value = settings.farmRelayToken || '';
   $('#set-dbx-anchor').value = settings.dropboxLocalAnchor || 'Insanity Media Dropbox';
+  $('#set-sfx-dirs').value = (settings.musicSfxExclusionDirs || musicDefaults.exclusionDirs || []).join('\n');
+  $('#set-music-gap').value = settings.musicCueMergeGapSeconds ?? musicDefaults.gapSeconds ?? 5;
   refreshDashboard();
 })();
 
@@ -465,7 +622,9 @@ function chipClass(status) {
 async function refreshDashboard() {
   if (!settings.notionToken || !settings.notionDb) {
     $('#dash-setup').style.display = 'block';
-    $('#ep-cards').innerHTML = '';
+    episodes = await window.feg.loadProjects();
+    $('#dash-status').textContent = `${episodes.length} local episode(s)`;
+    renderCards();
     return;
   }
   $('#dash-setup').style.display = 'none';
@@ -505,20 +664,25 @@ function renderCards() {
     .filter(x => dashFilter === 'All' || x.e.status === dashFilter);
 
   $('#ep-cards').innerHTML = order.map(({ e, i }) => {
-    const dots = ['Texted Video', 'Textless Video', 'Textless No Graphics', 'Audio Stems', 'Closed Captions', 'Segment Timings']
-      .map(k => `<span class="dot ${chipClass(e.assets[k]) || ''}" title="${k}: ${e.assets[k]}"></span>`).join('');
+    const targetId = ((settings.platforms || {})[e.id]) || 'general';
+    const target = distribution.profiles[targetId] || distribution.profiles.general;
+    const gateStateForEpisode = ((((settings.deliveryGates || {})[e.id] || {})[targetId]) || {});
+    const gateIds = distribution.gates.flatMap(g => g.items.map(([id]) => id));
+    const passedGates = gateIds.filter(id => gateStateForEpisode[id]).length;
+    const pct = Math.round(passedGates / gateIds.length * 100);
     const se = (e.season != null || e.ep != null) ? `S${e.season ?? '?'} E${e.ep ?? '?'}` : '';
     const d = daysUntil(e.deliverBy);
     const due = e.deliverBy
-      ? `<div class="${d != null && d <= 7 ? 'duewarn' : 'dueok'}">Deliver by ${e.deliverBy}${d != null ? (d < 0 ? ` — ${Math.abs(d)}d OVERDUE` : ` — ${d}d left`) : ''}</div>`
+      ? `<div class="${d != null && d <= 7 ? 'duewarn' : 'dueok'}">Deliver by ${escHtml(e.deliverBy)}${d != null ? (d < 0 ? ` — ${Math.abs(d)}d OVERDUE` : ` — ${d}d left`) : ''}</div>`
       : `<div class="dueok">No deliver-by date</div>`;
     return `<div class="ep-card" onclick="openEpisode(${i})">
-      <h3>${e.title}</h3>
-      <span class="muted">${[e.show, se].filter(Boolean).join(' · ')}${e.airDate ? ' · airs ' + e.airDate : ''}</span><br>
-      <span class="chip ${chipClass(e.status)}" style="margin-top:8px">${e.status || '—'}</span>
-      <div class="dots">${dots}</div>
+      <h3>${escHtml(e.title)}</h3>
+      <span class="muted">${escHtml([e.show, se].filter(Boolean).join(' · ') + (e.airDate ? ' · airs ' + e.airDate : ''))}</span><br>
+      <span class="chip ${chipClass(e.status)}" style="margin-top:8px">${escHtml(e.status || '—')}</span>
+      <div class="row" style="margin-top:10px;justify-content:space-between"><span class="muted">${escHtml(target.name)}</span><span class="muted">${passedGates}/${gateIds.length} delivery checks</span></div>
+      <div class="mini-progress"><span style="width:${pct}%"></span></div>
       <div style="margin-top:8px">${due}</div>
-      ${e.lastQC ? `<div class="dueok">Last QC: ${e.lastQC.slice(0, 10)}</div>` : ''}
+      ${e.lastQC ? `<div class="dueok">Last QC: ${escHtml(e.lastQC.slice(0, 10))}</div>` : ''}
     </div>`;
   }).join('') || '<p class="muted">No episodes match — create one, or duplicate the 📋 TEMPLATE row in Notion.</p>';
 }
@@ -532,7 +696,12 @@ $('#ne-create').onclick = async () => {
   if (!title) return;
   $('#ne-status').textContent = 'Creating…';
   try {
-    await window.feg.notionCreateEpisode({ title, show: $('#ne-show').value.trim(), season: $('#ne-season').value.trim(), ep: $('#ne-ep').value.trim() });
+    const fields = { title, show: $('#ne-show').value.trim(), season: $('#ne-season').value.trim(), ep: $('#ne-ep').value.trim() };
+    if (settings.notionToken && settings.notionDb) await window.feg.notionCreateEpisode(fields);
+    else {
+      episodes.unshift({ id: 'local-' + Date.now(), title, show: fields.show, season: fields.season || null, ep: fields.ep || null, status: 'Ready For Processing', assets: {} });
+      await window.feg.saveProjects(episodes);
+    }
     $('#ne-status').textContent = '✔';
     $('#new-ep-form').style.display = 'none';
     ['#ne-title', '#ne-show', '#ne-season', '#ne-ep'].forEach(s => $(s).value = '');
@@ -543,14 +712,34 @@ $('#ne-create').onclick = async () => {
 // ---------- episode ----------
 function epFolder() { return (settings.episodeFolders || {})[curEp.id] || null; }
 function epState(stageId) { return ((settings.epState || {})[curEp.id] || {})[stageId] || null; }
+function platformId() { return ((settings.platforms || {})[curEp.id]) || 'general'; }
+function profile() { return distribution.profiles[platformId()] || distribution.profiles.general; }
+
+function renderPlatform() {
+  const p = profile();
+  $('#ep-platform').innerHTML = Object.values(distribution.profiles).map(x => `<option value="${escHtml(x.id)}" ${x.id === p.id ? 'selected' : ''}>${escHtml(x.name)}</option>`).join('');
+  $('#ep-platform-badge').textContent = p.badge;
+  $('#ep-platform-summary').textContent = p.video;
+  $('#ep-platform-use').textContent = p.useCase || '';
+}
+
+$('#ep-platform').onchange = async () => {
+  settings.platforms = settings.platforms || {};
+  settings.platforms[curEp.id] = $('#ep-platform').value;
+  await window.feg.saveSettings(settings);
+  renderPlatform(); renderStages();
+};
 
 function openEpisode(i) {
   curEp = episodes[i];
   $('#ep-title').textContent = curEp.title;
   $('#ep-status-chip').textContent = curEp.status || '—';
   $('#ep-status-chip').className = 'chip ' + chipClass(curEp.status);
+  $('#ep-open-notion').style.display = curEp.url ? '' : 'none';
+  $('#ep-make-checklist').style.display = curEp.url ? '' : 'none';
   $('#ep-distname').textContent = settings.distFolderName || 'Distribution';
   renderEpFolder();
+  renderPlatform();
   renderChecklistStatus();
   renderStages();
   setTimeout(updateGuideProgressLabel, 50);
@@ -558,12 +747,7 @@ function openEpisode(i) {
 }
 
 // ---------- Notion stage checklist ----------
-const CHECKLIST_DESCRIPTION = 'Delivery checklist and technical specification for this episode, tracking every deliverable required for broadcast distribution against Insanity Media\'s Export Distribution List. Checked items reflect live status from the Media Distribution Toolkit.';
-const CHECKLIST_SPEC_LINES = [
-  'Video — ProRes 422 HQ · QuickTime MOV · 1920x1080 · 16:9 · square pixels · 29.97 progressive · 10-bit 4:2:2 · Legal Rec. 709. Head/tail: 30s black → 30s bars+tone → 30s slate → 30s black → program at 01:00:00:00.',
-  'Audio — 16 embedded mono PCM tracks (48kHz/24-bit) per master. 60 sidecar mono WAVs across 7 stems (Full Mix, M&E, Dialogue, Music, Effects, Mix-Minus-Narration, Narration) in 5.1/2.0/1.0 as applicable.',
-  'Data — SCC captions + CSV timings sheet, both matched to master timecode.',
-];
+const CHECKLIST_DESCRIPTION = 'Platform-specific streaming delivery checklist. Complete video, captions, artwork, all 18 metadata columns, content-restriction review, ad-break logging, rights, naming, and delivery-method gates together. MANUAL checks require a person.';
 
 function renderChecklistStatus() {
   const map = (settings.checklistBlocks || {})[curEp.id];
@@ -575,7 +759,8 @@ $('#ep-make-checklist').onclick = async () => {
   $('#ep-checklist-status').textContent = 'Writing to Notion…';
   try {
     const map = await window.feg.notionCreateChecklist({
-      pageId: curEp.id, description: CHECKLIST_DESCRIPTION, specLines: CHECKLIST_SPEC_LINES,
+      pageId: curEp.id, description: CHECKLIST_DESCRIPTION,
+      specLines: [`Target — ${profile().name}. ${profile().video}`, `Captions — ${profile().captionLabel}`, 'Artwork — required slots and dimensions are defined by the selected target profile. Reconfirm the live contract before delivery.'],
     });
     settings.checklistBlocks = settings.checklistBlocks || {};
     settings.checklistBlocks[curEp.id] = map;
@@ -618,20 +803,210 @@ $('#ep-open-folder').onclick = () => window.feg.openFolder(epFolder());
 $('#ep-open-notion').onclick = () => curEp.url && window.feg.openExternal(curEp.url);
 
 function stageStatus(st) {
-  if (st.notionProp) return curEp.assets[st.notionProp] || 'Not started';
+  if (st.notionProp) return (curEp.assets || {})[st.notionProp] || 'Not started';
   return epState(st.id) === 'done' ? 'Done' : 'Not started';
 }
 
 function renderStages() {
+  let optionalStarted = false;
   $('#stage-list').innerHTML = stages.map((st, i) => {
     const status = stageStatus(st);
-    return `<div class="stage-row" onclick="openStage(${i})">
-      <span class="num">${i + 1}</span>
+    const divider = st.optional && !optionalStarted ? (optionalStarted = true, '<div class="optional-divider">Advanced & optional tools - available whenever needed</div>') : '';
+    return divider + `<div class="stage-row ${st.optional ? 'optional-tool' : ''}" onclick="openStage(${i})">
+      <span class="num">${st.optional ? 'TOOL' : i + 1}</span>
       <span class="icon">${st.icon}</span>
       <div class="body"><b>${st.name}</b><span>${st.summary}</span></div>
       <span class="chip ${chipClass(status)}">${status}</span>
     </div>`;
   }).join('');
+}
+
+function gateState() {
+  return ((((settings.deliveryGates || {})[curEp.id] || {})[platformId()]) || {});
+}
+async function setGate(id, checked) {
+  settings.deliveryGates = settings.deliveryGates || {};
+  settings.deliveryGates[curEp.id] = settings.deliveryGates[curEp.id] || {};
+  settings.deliveryGates[curEp.id][platformId()] = settings.deliveryGates[curEp.id][platformId()] || {};
+  settings.deliveryGates[curEp.id][platformId()][id] = !!checked;
+  await window.feg.saveSettings(settings);
+}
+
+function renderProfileCard() {
+  const p = profile();
+  $('#st-profile').style.display = 'block';
+  if (curStage.id === 'compliance') {
+    $('#st-profile').innerHTML = `<div class="row"><h2 class="section" style="margin:0">Rules for ${escHtml(p.name)}</h2><span class="chip blue">Selected target</span></div>
+      <p style="margin-top:8px">${escHtml(p.contentPolicy || 'Confirm content restrictions against the delivery contract.')}</p>
+      <p class="muted" style="margin-top:6px">${escHtml(p.useCase || '')}</p>`;
+    return;
+  }
+  $('#st-profile').innerHTML = `<div class="row"><h2 class="section" style="margin:0">${escHtml(p.name)} preset</h2><span class="chip blue">${escHtml(p.badge)}</span></div>
+    <p style="margin-top:8px">${escHtml(p.video)}</p>
+    <p class="plain-path">${escHtml(p.useCase || '')}</p>
+    <p class="muted" style="margin-top:6px"><b>Captions:</b> ${escHtml(p.captionLabel)}</p>
+    <p class="muted" style="margin-top:6px">Source: ${escHtml(p.source)}. Confirm the platform's live contract at delivery time.</p>`;
+}
+
+function metadataRecord() {
+  settings.metadata = settings.metadata || {};
+  if (!settings.metadata[curEp.id]) {
+    settings.metadata[curEp.id] = {
+      seriesName: curEp.show || curEp.title || '', season: curEp.season ?? '',
+      episode: curEp.ep ?? '', episodeTitle: curEp.title || '',
+      videoQuality: 'HD', closedCaptioning: 'TRUE',
+      adIntegration: 'Present - needs review', callToAction: 'Present - needs review',
+    };
+  }
+  return settings.metadata[curEp.id];
+}
+let metaSaveTimer = null;
+async function validateMetadataUi() {
+  const record = metadataRecord();
+  const issues = await window.feg.validateMetadata(record);
+  document.querySelectorAll('[data-meta-error]').forEach(el => { el.textContent = ''; });
+  issues.forEach(x => { const el = document.querySelector(`[data-meta-error="${x.key}"]`); if (el) el.textContent = x.message; });
+  const valid = distribution.fields.length - new Set(issues.map(x => x.key)).size;
+  $('#meta-score').textContent = `${valid}/${distribution.fields.length} valid`;
+  $('#meta-score').className = 'chip ' + (issues.length ? 'yellow' : 'green');
+  await setGate('metadataValid', issues.length === 0);
+  return issues;
+}
+function renderMetadata() {
+  const record = metadataRecord();
+  $('#metadata-fields').innerHTML = distribution.fields.map(f => {
+    const value = escHtml(record[f.key] ?? '');
+    let control;
+    if (f.options) control = `<select data-meta="${f.key}"><option value=""></option>${f.options.map(o => `<option ${o === record[f.key] ? 'selected' : ''}>${escHtml(o)}</option>`).join('')}</select>`;
+    else if (f.key === 'subgenre') control = `<input type="text" data-meta="${f.key}" list="subgenre-options" value="${value}"><datalist id="subgenre-options">${distribution.subgenres.map(o => `<option value="${escHtml(o)}">`).join('')}</datalist>`;
+    else if (['cast','crew','description','keywords'].includes(f.key)) control = `<textarea data-meta="${f.key}">${value}</textarea>`;
+    else control = `<input type="text" data-meta="${f.key}" value="${value}">`;
+    return `<div class="${['cast','crew','description','keywords'].includes(f.key) ? 'wide' : ''}"><label>${escHtml(f.label)}${f.required ? ' *' : ''}</label>${control}<div class="muted">${escHtml(f.help || '')}</div><div class="field-error" data-meta-error="${f.key}"></div></div>`;
+  }).join('');
+  document.querySelectorAll('[data-meta]').forEach(el => el.oninput = () => {
+    record[el.dataset.meta] = el.value;
+    clearTimeout(metaSaveTimer);
+    metaSaveTimer = setTimeout(async () => {
+      await window.feg.saveSettings(settings);
+      await validateMetadataUi();
+      $('#meta-status').textContent = 'Saved locally';
+    }, 250);
+  });
+  validateMetadataUi();
+}
+$('#meta-copy').onclick = async () => {
+  const row = distribution.fields.map(f => String(metadataRecord()[f.key] ?? '')).join('\t');
+  try { await navigator.clipboard.writeText(row); $('#meta-status').textContent = 'Copied one tab-separated row - paste into the first sheet column.'; }
+  catch (e) { $('#meta-status').textContent = 'Copy failed: ' + e.message; }
+};
+$('#meta-export').onclick = async () => {
+  const folder = epFolder();
+  if (!folder) { $('#meta-status').textContent = 'Set the episode folder before exporting.'; return; }
+  try {
+    const r = await window.feg.exportMetadata({ record: metadataRecord(), episodeFolder: folder });
+    $('#meta-status').textContent = 'Exported: ' + r.dest;
+    await setGate('metadataValid', true);
+  } catch (e) { $('#meta-status').textContent = 'Fix first: ' + e.message; }
+};
+
+function artworkState() {
+  settings.artwork = settings.artwork || {};
+  settings.artwork[curEp.id] = settings.artwork[curEp.id] || {};
+  settings.artwork[curEp.id][platformId()] = settings.artwork[curEp.id][platformId()] || {};
+  return settings.artwork[curEp.id][platformId()];
+}
+async function refreshArtworkGates() {
+  const state = artworkState(), required = profile().art.filter(x => x.required);
+  const dimensions = required.every(x => state[x.id]?.ok);
+  const layeredRequired = required.filter(x => x.layered);
+  await setGate('artDimensions', dimensions);
+  await setGate('artLayered', !layeredRequired.length || layeredRequired.every(x => state[x.id]?.ok));
+}
+function renderArtwork() {
+  const state = artworkState();
+  $('#art-slots').innerHTML = profile().art.map(slot => {
+    const saved = state[slot.id], spec = slot.width ? `${slot.width}x${slot.height} ${slot.exact ? 'exact' : 'minimum'}` : (slot.layered ? 'PSD, PSB, or layered TIFF' : 'Per contract');
+    return `<div class="art-slot ${slot.required ? 'required' : ''}"><div class="row"><b>${escHtml(slot.name)}</b><span class="chip ${saved?.ok ? 'green' : ''}">${slot.required ? 'Required' : 'Recommended / optional'}</span></div>
+      <p class="muted" style="margin:6px 0">${escHtml(spec)}</p>
+      <div class="filepath">${escHtml(saved?.path || 'No file assigned')}</div>
+      <button class="btn secondary small" style="margin-top:8px" onclick="pickArtwork('${slot.id}')">Choose & check</button>
+      <div class="muted" style="margin-top:6px">${escHtml(saved?.summary || '')}</div></div>`;
+  }).join('');
+}
+async function pickArtwork(slotId) {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Artwork', extensions: ['jpg','jpeg','png','psd','psb','tif','tiff'] }] });
+  if (!files[0]) return;
+  $('#art-status').textContent = 'Checking artwork…';
+  try {
+    const results = await window.feg.checkArtwork({ filePath: files[0], platformId: platformId(), slotId });
+    const ok = !results.some(x => x.level === 'fail');
+    const slot = profile().art.find(x => x.id === slotId);
+    let storedPath = files[0];
+    if (ok && epFolder()) storedPath = (await window.feg.fileArtwork({ filePath: files[0], episodeFolder: epFolder(), slotName: slot.name })).dest;
+    artworkState()[slotId] = { path: storedPath, ok, summary: results.map(x => `${x.check}: ${x.detail}`).join(' · ') };
+    await window.feg.saveSettings(settings); await refreshArtworkGates(); renderArtwork();
+    $('#art-status').textContent = ok ? (epFolder() ? 'Passed and filed into 03 Artwork.' : 'Passed. Set an episode folder to file a managed copy.') : 'Artwork failed its slot requirements.';
+  } catch (e) { $('#art-status').textContent = 'Check failed: ' + e.message; }
+}
+
+function complianceState() {
+  settings.compliance = settings.compliance || {};
+  settings.compliance[curEp.id] = settings.compliance[curEp.id] || {};
+  settings.compliance[curEp.id][platformId()] = settings.compliance[curEp.id][platformId()] || {};
+  return settings.compliance[curEp.id][platformId()];
+}
+function renderCompliance() {
+  const c = complianceState();
+  $('#comp-breaks').value = c.breaks || ''; $('#comp-sponsor').value = c.sponsor || ''; $('#comp-cta').value = c.cta || '';
+  $('#comp-guidance').textContent = platformId() === 'filmhub'
+    ? 'Filmhub delivery: the finished program must not contain URLs or promotional references. Confirm they are absent, or remove them before delivery.'
+    : platformId() === 'contract'
+      ? 'Custom delivery: use the signed contract to decide whether sponsor messages, CTAs, URLs, promos, or ad-break metadata are allowed.'
+      : 'Normal path: if the episode contains no sponsor message, CTA, URL, or promotion, use the N/A button. Only enter details when something is actually present.';
+}
+$('#comp-none').onclick = async () => {
+  const c = complianceState();
+  c.breaks = 'N/A';
+  c.sponsor = 'None present in final program.';
+  c.cta = 'None present in final program.';
+  const record = metadataRecord();
+  record.adIntegration = 'None';
+  record.callToAction = 'None';
+  await window.feg.saveSettings(settings);
+  await setGate('sponsorReview', true);
+  await setGate('ctaReview', true);
+  await setGate('adBreaks', true);
+  settings.epState = settings.epState || {};
+  settings.epState[curEp.id] = settings.epState[curEp.id] || {};
+  settings.epState[curEp.id].compliance = 'done';
+  await window.feg.saveSettings(settings);
+  renderCompliance();
+  $('#st-chip').textContent = 'Done'; $('#st-chip').className = 'chip green';
+  await checkChecklistItem('compliance');
+  $('#comp-status').textContent = 'Saved and completed: no sponsor, CTA, URL, promotion, or ad-break markers apply.';
+};
+$('#comp-save').onclick = async () => {
+  const c = complianceState();
+  c.breaks = $('#comp-breaks').value.trim(); c.sponsor = $('#comp-sponsor').value.trim(); c.cta = $('#comp-cta').value.trim();
+  const breakLines = c.breaks.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const breaksValid = breakLines.length > 0 && (breakLines.length === 1 && /^n\/?a$/i.test(breakLines[0]) || breakLines.every(x => /^\d{2}:\d{2}:\d{2}[:;]\d{2}(?:\s+.*)?$/.test(x)));
+  await window.feg.saveSettings(settings); await setGate('adBreaks', breaksValid);
+  $('#comp-status').textContent = breaksValid ? 'Saved. Timecodes are structurally valid; spot-check every break against the final master.' : 'Saved, but add one timecode per line or enter N/A.';
+};
+
+function renderGates() {
+  const state = gateState();
+  $('#gate-list').innerHTML = distribution.gates.map(group => `<div class="gate-group"><b>${escHtml(group.name)}</b>${group.items.map(([id, label]) =>
+    `<label class="gate-item ${label.startsWith('MANUAL') ? 'manual' : ''}"><input type="checkbox" data-gate="${id}" ${state[id] ? 'checked' : ''}><span>${escHtml(label)}</span></label>`).join('')}</div>`).join('');
+  document.querySelectorAll('[data-gate]').forEach(el => el.onchange = async () => { await setGate(el.dataset.gate, el.checked); updateReadyButton(); });
+  updateReadyButton();
+}
+function updateReadyButton() {
+  if (!curStage || curStage.id !== 'deliver') return;
+  const state = gateState();
+  const all = distribution.gates.flatMap(g => g.items).every(([id]) => state[id]);
+  $('#st-ready-btn').disabled = !all;
+  $('#st-manual-status').textContent = all ? 'All platform gates complete.' : 'Complete every gate before marking Distribution Ready.';
 }
 
 // ---------- stage ----------
@@ -647,20 +1022,26 @@ function openStage(i) {
   $('#st-chip').textContent = status;
   $('#st-chip').className = 'chip ' + chipClass(status);
   $('#st-details').innerHTML = curStage.details;
+  ['#st-profile','#st-metadata','#st-artwork','#st-compliance','#st-gates'].forEach(id => $(id).style.display = 'none');
+  if (['targets','texted','captions','artwork','compliance','deliver'].includes(curStage.id)) renderProfileCard();
+  if (curStage.id === 'metadata') { $('#st-metadata').style.display = 'block'; renderMetadata(); }
+  if (curStage.id === 'artwork') { $('#st-artwork').style.display = 'block'; renderArtwork(); }
+  if (curStage.id === 'compliance') { $('#st-compliance').style.display = 'block'; renderCompliance(); }
+  if (curStage.id === 'deliver') { $('#st-gates').style.display = 'block'; renderGates(); }
   $('#st-results').innerHTML = '';
   $('#st-actions').style.display = 'none';
   $('#st-file-status').textContent = '';
   $('#st-intake').style.display = curStage.intake ? 'block' : 'none';
-  $('#st-build').style.display = (curStage.id === 'texted' || curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'block' : 'none';
+  $('#st-build').style.display = ['broadcast','textless','textless_nogfx'].includes(curStage.id) ? 'block' : 'none';
   if (curStage.id === 'textless' || curStage.id === 'textless_nogfx') {
     $('#st-tail-row').style.display = 'none';
     $('#st-build-note').textContent = (curStage.id === 'textless_nogfx'
       ? 'Wraps the checked no-graphics file with the broadcast head/tail.'
       : 'Wraps the checked textless file with the broadcast head/tail.') +
       ' The slate will read "TEXTLESS VERSION" per spec (same specs and length rules as the texted master).';
-  } else if (curStage.id === 'texted') {
+  } else if (curStage.id === 'broadcast') {
     $('#st-tail-row').style.display = 'flex';
-    $('#st-build-note').textContent = 'Wraps the checked file with the broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Skip this if your distributor wants a clean program-only file.';
+    $('#st-build-note').textContent = 'Adds the required broadcast head/tail (bars, tone, slate, blacks — program at 01:00:00:00) without re-encoding. Do not run this on a file that already has the required head/tail.';
   }
   $('#st-build-btn').disabled = true;
   $('#st-build-status').textContent = '';
@@ -686,14 +1067,16 @@ function openStage(i) {
   if (curStage.id === 'renderfarm') { fxAeps = []; fxSelected = new Set(); fxGroupView = null; $('#fx-aeps').innerHTML = ''; $('#fx-selection-bar').style.display = 'none'; $('#fx-results').innerHTML = ''; $('#fx-run-texted').style.display = 'none'; $('#fx-run-textless').style.display = 'none'; $('#fx-run-both').style.display = 'none'; $('#fx-scan-status').textContent = ''; $('#fx-run-status').textContent = ''; }
   $('#st-textless-tools').style.display = (curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'block' : 'none';
   if (curStage.id === 'textless' || curStage.id === 'textless_nogfx') { $('#fx-xml-status').textContent = ''; $('#fx-xml-report').textContent = ''; $('#fx-clean-status').textContent = ''; $('#fx-clean-report').textContent = ''; }
-  $('#st-auto').style.display = (curStage.id === 'paperwork' || curStage.id === 'timings' || curStage.id === 'captions') ? 'block' : 'none';
+  $('#st-auto').style.display = (curStage.id === 'paperwork' || curStage.id === 'timings') ? 'block' : 'none';
   $('#auto-paperwork').style.display = curStage.id === 'paperwork' ? 'block' : 'none';
   $('#auto-timings').style.display = curStage.id === 'timings' ? 'block' : 'none';
-  $('#auto-captions').style.display = curStage.id === 'captions' ? 'block' : 'none';
+  $('#auto-captions').style.display = 'none';
   $('#cap-retime-status').textContent = '';
   $('#auto-tracks').style.display = 'none';
   $('#auto-status').textContent = ''; $('#auto-status2').textContent = ''; $('#auto-gen-status').textContent = '';
   $('#st-ready-btn').style.display = curStage.id === 'deliver' ? '' : 'none';
+  $('#st-done-btn').style.display = curStage.id === 'deliver' ? 'none' : '';
+  $('#st-notion-btn').style.display = curEp.url ? '' : 'none';
   $('#st-manual-status').textContent = '';
   if (curStage.intake) $('#st-drop').textContent =
     `Drop ${curStage.intake.multi ? 'file(s)' : 'a file'} here (${curStage.intake.accept.map(e => '.' + e).join(' ')}), or click to choose`;
@@ -722,12 +1105,12 @@ function renderResults() {
     const runtimeRow = cf.results.find(r => r.check === 'Runtime format');
     const tableResults = cf.results.filter(r => r.check !== 'Runtime format');
     const rows = tableResults.map(r =>
-      `<tr><td><span class="lv ${r.level}">${r.level.toUpperCase()}</span></td><td>${r.check}</td><td>${r.detail}${r.fix ? `<div class="fix">→ ${r.fix}</div>` : ''}</td></tr>`).join('');
+      `<tr><td><span class="lv ${r.level}">${escHtml(r.level.toUpperCase())}</span></td><td>${escHtml(r.check)}</td><td>${escHtml(r.detail)}${r.fix ? `<div class="fix">→ ${escHtml(r.fix)}</div>` : ''}</td></tr>`).join('');
     const runtimeColor = runtimeRow && runtimeRow.level === 'pass' ? 'var(--pass)' : 'var(--warn)';
     const runtimeBanner = runtimeRow ? `<div style="margin:8px 0;padding:10px 12px;border-radius:8px;background:var(--panel2);border:1px solid ${runtimeColor}">
-      <b style="color:${runtimeColor}">${ICO.clock} ${runtimeRow.detail}</b>${runtimeRow.fix ? `<div class="fix" style="margin-top:4px">→ ${runtimeRow.fix}</div>` : ''}
+      <b style="color:${runtimeColor}">${ICO.clock} ${escHtml(runtimeRow.detail)}</b>${runtimeRow.fix ? `<div class="fix" style="margin-top:4px">→ ${escHtml(runtimeRow.fix)}</div>` : ''}
     </div>` : '';
-    return `<div style="margin-bottom:14px"><div class="filepath">${cf.path}</div>
+    return `<div style="margin-bottom:14px"><div class="filepath">${escHtml(cf.path)}</div>
       <div class="row" style="margin:4px 0"><span style="color:var(--pass)">${ICO.ok} ${counts.pass}</span><span style="color:var(--warn)">${ICO.warn} ${counts.warn}</span><span style="color:var(--fail)">${ICO.no} ${counts.fail}</span>
       <b style="color:${cf.ok ? 'var(--pass)' : 'var(--fail)'}">${cf.ok ? 'CHECKS PASSED' : 'FAILED — fix and re-export, or file anyway below'}</b></div>
       ${runtimeBanner}
@@ -746,7 +1129,7 @@ async function handleFiles(paths) {
   checkedFiles = [];
   for (const p of paths) {
     try {
-      const results = await window.feg.intakeCheck({ stageId: curStage.id, filePath: p });
+      const results = await window.feg.intakeCheck({ stageId: curStage.id, filePath: p, platformId: curStage.optional ? 'broadcast_archive' : platformId() });
       checkedFiles.push({ path: p, results, ok: !results.some(r => r.level === 'fail') });
     } catch (e) {
       checkedFiles.push({ path: p, results: [{ level: 'fail', check: 'Check', detail: e.message }], ok: false });
@@ -767,7 +1150,7 @@ $('#st-file-btn').onclick = async () => {
     }
     // Notion updates
     const allOk = checkedFiles.every(cf => cf.ok);
-    if (curStage.notionProp) {
+    if (curStage.notionProp && curEp.url) {
       const kind = curStage.intake.check;
       let stageSucceeded = false;
       if (kind === 'video') {
@@ -775,12 +1158,7 @@ $('#st-file-btn').onclick = async () => {
         await window.feg.notionPushQC({ pageId: curEp.id, asset: curStage.notionProp, passed: allOk, failSummary: fails || 'none' });
         stageSucceeded = allOk;
       } else {
-        // Captions: SCC is the REQUIRED format — other formats are optional extras.
-        let ready = allOk;
-        if (curStage.id === 'captions' && !checkedFiles.some(cf => cf.path.toLowerCase().endsWith('.scc'))) {
-          ready = false;
-          note = '⚠ No .scc yet (SCC is the required format) — Notion stays "In progress". ';
-        }
+        const ready = allOk;
         await window.feg.notionSetAsset({ pageId: curEp.id, asset: curStage.notionProp, status: ready ? ASSET_SUCCESS[kind] || 'Ready' : 'In progress' });
         curEp.assets[curStage.notionProp] = ready ? (ASSET_SUCCESS[kind] || 'Ready') : 'In progress';
         stageSucceeded = ready;
@@ -788,8 +1166,15 @@ $('#st-file-btn').onclick = async () => {
       if (curStage.intake.check === 'video') curEp.assets[curStage.notionProp] = allOk ? 'QC Passed' : 'QC Failed';
       if (stageSucceeded) await checkChecklistItem(curStage.id);
     }
-    try { await window.feg.notionSetDropboxPath({ pageId: curEp.id, folderPath: distFolder }); } catch (e) { /* optional */ }
-    $('#st-file-status').textContent = note + `✔ Filed ${checkedFiles.length} file(s) → ${distFolder} · Notion updated`;
+    if (curStage.notionProp && !curEp.url) {
+      curEp.assets = curEp.assets || {};
+      curEp.assets[curStage.notionProp] = allOk ? (curStage.intake.check === 'video' ? 'QC Passed' : 'Ready') : 'QC Failed';
+      await window.feg.saveProjects(episodes);
+    }
+    if (curStage.id === 'texted') await setGate('videoMachine', allOk);
+    if (curStage.id === 'captions') await setGate('captionMachine', allOk);
+    if (curEp.url) try { await window.feg.notionSetDropboxPath({ pageId: curEp.id, folderPath: distFolder }); } catch (e) { /* optional */ }
+    $('#st-file-status').textContent = note + `✔ Filed ${checkedFiles.length} file(s) → ${distFolder}${curEp.url ? ' · Notion updated' : ' · local project updated'}`;
     const status = stageStatus(curStage);
     $('#st-chip').textContent = status; $('#st-chip').className = 'chip ' + chipClass(status);
   } catch (e) {
@@ -811,16 +1196,16 @@ $('#st-build-btn').onclick = async () => {
   window.feg.onBuildProgress(stage => $('#st-build-status').textContent = stage);
   try {
     const se = (curEp.season != null && curEp.ep != null) ? `S${String(curEp.season).padStart(2, '0')}E${String(curEp.ep).padStart(2, '0')}` : '';
-    await window.feg.buildMaster({
+    const result = await window.feg.buildMaster({
       input: src, output: out,
       slate: {
         programTitle: curEp.show || curEp.title, episodeTitle: curEp.title, seasonEpisode: se,
         showCode: $('#st-showcode').value, productionCompany: $('#st-prodco').value,
-        textlessAtTail: curStage.id === 'texted' && $('#st-textless-tail').checked,
+        textlessAtTail: curStage.id === 'broadcast' && $('#st-textless-tail').checked,
         version: (curStage.id === 'textless' || curStage.id === 'textless_nogfx') ? 'textless' : 'texted',
       },
     });
-    $('#st-build-status').textContent = '✔ Broadcast master built: ' + out;
+    $('#st-build-status').textContent = '✔ Broadcast master built: ' + result.output;
   } catch (e) {
     $('#st-build-status').textContent = '✖ ' + e.message;
   }
@@ -839,10 +1224,11 @@ $('#st-done-btn').onclick = async () => {
 };
 $('#st-notion-btn').onclick = () => curEp.url && window.feg.openExternal(curEp.url);
 $('#st-ready-btn').onclick = async () => {
-  $('#st-manual-status').textContent = 'Updating Notion…';
+  $('#st-manual-status').textContent = curEp.url ? 'Updating Notion…' : 'Updating local project…';
   try {
-    await window.feg.notionSetStatus({ pageId: curEp.id, status: 'Distribution Ready' });
+    if (curEp.url) await window.feg.notionSetStatus({ pageId: curEp.id, status: 'Distribution Ready' });
     curEp.status = 'Distribution Ready';
+    if (!curEp.url) await window.feg.saveProjects(episodes);
     $('#st-manual-status').textContent = '✔ Episode is Distribution Ready';
   } catch (e) { $('#st-manual-status').textContent = '✖ ' + e.message; }
 };
@@ -933,9 +1319,9 @@ function openDoc(tplId) {
     if (sec.type === 'note') return `<div class="card"><p class="muted">${sec.text}</p></div>`;
     if (sec.type === 'fields') {
       return `<div class="card">` + sec.fields.map(f => {
-        const v = (d.fields[f.k] || '').replace(/"/g, '&quot;');
+        const v = escHtml(d.fields[f.k] || '');
         return `<label>${f.label}</label>` + (f.multi
-          ? `<textarea data-doc-field="${f.k}" style="width:100%;min-height:80px;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:7px;font:inherit">${d.fields[f.k] || ''}</textarea>`
+          ? `<textarea data-doc-field="${f.k}" style="width:100%;min-height:80px;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:7px;font:inherit">${v}</textarea>`
           : `<input type="text" data-doc-field="${f.k}" value="${v}">`);
       }).join('') + `</div>`;
     }
@@ -952,7 +1338,7 @@ function openDoc(tplId) {
 
 function docRowHtml(sec, si, row) {
   return '<tr>' + sec.cols.map(c => {
-    const v = (row[c.k] || '').replace(/"/g, '&quot;');
+    const v = escHtml(row[c.k] || '');
     return `<td><input type="text" data-doc-cell="${c.k}" value="${v}" style="padding:4px 6px;font-size:12.5px"></td>`;
   }).join('') + `<td><button class="btn secondary small" onclick="this.closest('tr').remove(); docAutoSave()">${ICO.no}</button></td></tr>`;
 }
@@ -1094,6 +1480,8 @@ $('#doc-export').onclick = async () => {
 // ---------- automation: XML / caption imports ----------
 let parsedSeq = null;
 let musicCues = [];   // detected song cues (song-level, across all audio tracks)
+let musicAnalysis = { cues: [], excluded: 0, indexedFiles: 0 };
+let selectedCueIds = new Set();
 const EPIDEMIC = { composer: '(per Epidemic track page)', publisher: 'Epidemic Sound AB', society: 'N/A (direct license)', usage: 'Background Instrumental' };
 
 // frames → HH:MM:SS:FF
@@ -1103,111 +1491,18 @@ function framesToTC(f, tbase) {
   return [h, m2, s, ff].map(n => String(n).padStart(2, '0')).join(':');
 }
 
-// Pulls Epidemic-style metadata out of a filename when it's there ("ES_Title
-// - Composer[_stem].ext"); otherwise just uses the raw filename as the title.
-// This is enrichment only now — it never decides whether a clip IS a cue.
-function parseES(name) {
-  let base = name.replace(/\.[^.]+$/, '');
-  const isEpidemicFormat = /^ES_/i.test(base);
-  if (!isEpidemicFormat) return { title: base, composer: '', isEpidemicFormat };
-  base = base.slice(3).replace(/^\d+_/, '');
-  const m = base.match(/^(.*?) - (.*)$/);
-  if (!m) return { title: base.replace(/\s+STEMS.*$/i, '').trim(), composer: '', isEpidemicFormat };
-  return {
-    title: m[1].replace(/\s+STEMS.*$/i, '').trim(),
-    // "Audio Extracted"/"Audio Extracted_1" is Epidemic's naming for an
-    // alternate derivative of the SAME underlying song/composer — strip it
-    // so segments faded/cut across an edit share the same composer key and
-    // actually merge into one cue (hit this for real: 3 separate cues for
-    // one faded song, because "Composer" vs "Composer Audio Extracted" vs
-    // "Composer Audio Extracted_1" never matched each other).
-    composer: m[2]
-      .replace(/\s+Audio Extracted(?:_\d+)?$/i, '')
-      .replace(/_(melody|drums|bass|instruments|stems.*)$/i, '')
-      .trim(),
-    isEpidemicFormat,
-  };
-}
-
-// Epidemic's two catalogs name themselves differently: music is
-// "ES_Title - Composer", sound design/SFX is a comma-separated tag list
-// ("ES_229347_Designed, Riser, Horror 02"). Purely an informational label on
-// each clip in the selection list below ("looks like SFX") — it never checks
-// or unchecks anything; which clips are music is entirely your call.
-function looksLikeMusic(name) {
-  if (/\[music\]/i.test(name)) return true;
-  if (!/^ES_.* - /.test(name)) return false;
-  if (/- Epidemic Sound\.\w+$/i.test(name)) return false;   // ES SFX end this way
-  if (name.split(',').length >= 3) return false;             // SFX are comma-lists
-  return true;
-}
-
-// Obvious sound-design/SFX naming — woosh/glitch/boom-type hits are never
-// music, so clips whose filename contains one of these (whole word, not a
-// substring of something else) are dropped before they ever reach the
-// checklist. Distinct from `looksLikeMusic`'s Epidemic-catalog-naming guess
-// below, which is only ever an informational label, never a filter.
-// Custom letter-based boundary, not \b — \b treats "_" as a word character,
-// so it would never match e.g. "Glitch_FX_02.wav" (no boundary between "h"
-// and "_"). Filenames commonly separate words with _/-/digits/spaces, none
-// of which \b treats as a boundary the way this needs.
-const OBVIOUS_SFX_RE = /(?:^|[^a-z])(woosh|whoosh|swoosh|glitch|clicks?|ticks?|booms?|impacts?|risers?)(?:[^a-z]|$)/i;
-
-// Candidates = every clip on the CHECKED, ENABLED audio track(s) — all
-// ENABLED audio tracks are checked by default (scanned automatically), so
-// nothing needs picking unless you want to narrow it down; tracks disabled
-// in the timeline are excluded entirely (not even offered as an option) and
-// obvious SFX-named clips (woosh/glitch/boom/etc.) are filtered out before
-// display. Nothing else is pre-selected as music or skipped for you though;
-// that choice happens below in the per-clip list, which shows the track and
-// raw filename for each one so you have what you need to decide. Carries an
-// `sfxLike` hint (Epidemic's SFX catalog names itself differently than its
-// music catalog) purely as an informational label — it never checks or
-// unchecks anything on its own.
-//
-// Merging: grouped by song (title+composer) FIRST, then merged by time
-// WITHIN each group — not merged in raw timeline order. This matters
-// because the same song can occupy more than one track at once (a
-// crossfade) or get split by a straight cut with an unrelated clip's own
-// occurrence landing between its two halves in absolute time; grouping by
-// song before merging means the same-song clips only ever get compared to
-// each other, so both cases merge correctly regardless of what else is
-// interleaved with them on the timeline. Also merges stem layers
-// (_melody/_drums/_bass, stripped by parseES into the same composer key).
-// Returns [{ title, composer, file, trackIndex, trackLabel, start, end, dur (frames), sfxLike }] sorted by start.
-function buildMusicCues(seq, trackIndices) {
-  const tbase = seq.timebase || 30;
-  const raw = seq.audioTracks.filter(t => trackIndices.includes(t.index) && t.enabled !== false).flatMap(t =>
-    t.clips.filter(c => !OBVIOUS_SFX_RE.test(c.name)).map(c => ({
-      ...parseES(c.name), file: c.name, trackIndex: t.index, trackLabel: t.label,
-      start: c.start, end: c.start + c.durFrames, sfxLike: !looksLikeMusic(c.name),
-    }))
-  );
-  const bySong = new Map();
-  for (const c of raw) {
-    const key = c.title + ' ' + c.composer;
-    if (!bySong.has(key)) bySong.set(key, []);
-    bySong.get(key).push(c);
-  }
-  const merged = [];
-  for (const clips of bySong.values()) {
-    clips.sort((a, b) => a.start - b.start || a.end - b.end);
-    let cur = null;
-    for (const c of clips) {
-      // same song overlapping (crossfade across tracks) or within 2s (a cut
-      // or stem-layer split) of the running merge — extend it; otherwise
-      // this is a genuinely separate later occurrence of the same song.
-      if (cur && c.start <= cur.end + tbase * 2) {
-        cur.sfxLike = cur.sfxLike && c.sfxLike;
-        cur.end = Math.max(cur.end, c.end);
-      } else {
-        cur = { ...c };
-        merged.push(cur);
-      }
-    }
-  }
-  merged.sort((a, b) => a.start - b.start || a.end - b.end);
-  return merged.map(c => ({ ...c, dur: c.end - c.start }));
+async function refreshMusicAnalysis(trackIndices, resetSelection) {
+  musicAnalysis = await window.feg.analyzeMusicCues({
+    sequence: parsedSeq,
+    trackIndices,
+    exclusionDirs: settings.musicSfxExclusionDirs || musicDefaults.exclusionDirs,
+    gapSeconds: settings.musicCueMergeGapSeconds ?? musicDefaults.gapSeconds,
+    episodeFolder: epFolder(),
+  });
+  musicCues = musicAnalysis.cues;
+  if (resetSelection) selectedCueIds = new Set(musicCues.filter(c => c.confidence === 'likely').map(c => c.id));
+  else selectedCueIds = new Set([...selectedCueIds].filter(id => musicCues.some(c => c.id === id)));
+  renderSongChecklist();
 }
 
 // Shift a sequence-relative TC up one hour so paperwork matches the delivered
@@ -1227,17 +1522,18 @@ function masterTC(tc, seq, enabled) {
 // below.
 function renderTrackPicker(tracks, dataAttr, defaultChecked) {
   if (!tracks.length) return '<span class="muted">none found</span>';
-  const rows = tracks.map(t => `<label style="display:flex;gap:8px;align-items:baseline;margin:5px 0;color:var(--text)">
+  const rows = tracks.map(t => `<label ${dataAttr === 'atrack' ? `data-track-row="${t.index}"` : ''} style="display:flex;gap:8px;align-items:baseline;margin:5px 0;color:var(--text);padding:6px;border-radius:7px">
       <input type="checkbox" data-${dataAttr}="${t.index}"${defaultChecked ? ' checked' : ''}>
-      <span style="flex:1"><b>${t.label}</b> — ${t.clipCount} clip(s)<br><span class="muted" style="font-size:11px">e.g. ${t.clips[0] ? t.clips[0].name : ''}</span></span>
+      <span style="flex:1"><b>${escHtml(t.timelineName || t.label)}</b> — ${t.clipCount} clip(s)<br><span class="muted" style="font-size:11px">Example: ${escHtml(t.clips[0] ? t.clips[0].name : '')}</span></span>
     </label>`).join('');
   return `<div style="max-height:280px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:8px 10px">${rows}</div>`;
 }
 
-$('#auto-xml-pick').onclick = async () => {
+async function loadCueXml() {
   const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
   if (!files[0]) return;
   $('#auto-status').textContent = 'Parsing…';
+  $('#cue-intro-status').textContent = 'Reading the Premiere timeline…';
   try {
     parsedSeq = await window.feg.parseSequenceXml(files[0]);
     // Tracks disabled in the timeline are excluded entirely — not offered as
@@ -1246,96 +1542,182 @@ $('#auto-xml-pick').onclick = async () => {
     const enabledAudio = parsedSeq.audioTracks.filter(t => t.enabled !== false);
     const disabledCount = parsedSeq.audioTracks.length - enabledAudio.length;
     $('#auto-status').textContent = `✔ "${parsedSeq.name}" — ${enabledAudio.length} audio tracks${disabledCount ? ` (${disabledCount} disabled, excluded)` : ''} · ${parsedSeq.videoTracks.length} video tracks · ${parsedSeq.markers.length} markers`;
+    $('#cue-intro-status').textContent = `Loaded “${parsedSeq.name}”`;
     $('#auto-atracks').innerHTML = renderTrackPicker(enabledAudio, 'atrack', true);
     $('#auto-vtracks').innerHTML = renderTrackPicker(parsedSeq.videoTracks, 'vtrack');
-    // All enabled audio tracks scanned by default — uncheck any above to exclude them.
-    musicCues = buildMusicCues(parsedSeq, enabledAudio.map(t => t.index));
-    renderSongChecklist();
+    // All enabled audio tracks are scanned, but only high-confidence music is
+    // selected in the primary review. Known SFX library files never appear.
+    $('#auto-songs').innerHTML = '<div class="cue-empty">Indexing the SFX library and grouping song uses…</div>';
+    await refreshMusicAnalysis(enabledAudio.map(t => t.index), true);
+    $('#cue-intro').style.display = 'none';
+    $('#cue-workspace').style.display = 'block';
+    $('#cue-sequence-name').textContent = parsedSeq.name;
+    document.querySelectorAll('[data-cue-step]').forEach(step => step.classList.toggle('active', +step.dataset.cueStep <= 3));
+  } catch (e) {
+    $('#auto-status').textContent = '✖ ' + e.message;
+    $('#cue-intro-status').textContent = 'Could not read that XML: ' + e.message;
+  }
+}
+$('#auto-xml-pick').onclick = loadCueXml;
+$('#cue-start-pick').onclick = loadCueXml;
+$('#open-cue-builder').onclick = () => go('cues');
+$('#cue-back').onclick = () => go('stage');
+$('#auto-graphics-pick').onclick = async () => {
+  const files = await window.feg.pickFiles({ filters: [{ name: 'Final Cut Pro XML', extensions: ['xml'] }] });
+  if (!files[0]) return;
+  $('#auto-status').textContent = 'Reading graphics tracks…';
+  try {
+    parsedSeq = await window.feg.parseSequenceXml(files[0]);
+    $('#auto-vtracks').innerHTML = renderTrackPicker(parsedSeq.videoTracks, 'vtrack');
     $('#auto-tracks').style.display = 'block';
+    $('#auto-status').textContent = `✔ “${parsedSeq.name}” loaded for graphics logs`;
   } catch (e) { $('#auto-status').textContent = '✖ ' + e.message; }
 };
 
 // Rebuild cues live whenever the checked music tracks change.
-document.addEventListener('change', e => {
+document.addEventListener('change', async e => {
   if (e.target && e.target.matches && e.target.matches('[data-atrack]')) {
     const picked = [...document.querySelectorAll('[data-atrack]:checked')].map(el => +el.dataset.atrack);
-    musicCues = buildMusicCues(parsedSeq, picked);
-    renderSongChecklist();
+    await refreshMusicAnalysis(picked, false);
   }
 });
 
 function renderSongChecklist() {
   const tbase = parsedSeq.timebase || 30;
+  const likelyCount = musicCues.filter(c => c.confidence === 'likely').length;
+  const reviewCount = musicCues.length - likelyCount;
+  $('#auto-cue-summary').innerHTML = [
+    [likelyCount, 'likely music uses'],
+    [reviewCount, 'needs your review'],
+    [musicAnalysis.excluded || 0, 'known SFX removed'],
+    [musicAnalysis.excludedFormat || 0, 'non-WAV/MP3 skipped'],
+  ].map(([n, label]) => `<div class="cue-metric"><b>${Number(n).toLocaleString()}</b><span>${label}</span></div>`).join('');
   if (!musicCues.length) {
-    $('#auto-songs').innerHTML = '<span class="muted">No audio tracks checked — tick at least one track above, then pick which clips are music here.</span>';
+    $('#auto-songs').innerHTML = '<div class="cue-empty">No likely music was found. Known sound effects were removed; expand the audio-track scope or check the uncertain-audio count if you expected music.</div>';
     return;
   }
+  const segmentIds = new Map();
+  musicCues.forEach(c => c.segments.forEach(s => segmentIds.set(`${s.trackIndex}:${s.start}:${s.end}`, c.id)));
+  const maxEnd = Math.max(1, ...parsedSeq.audioTracks.flatMap(t => t.clips.map(c => c.start + c.durFrames)));
+  const ruler = [0, .25, .5, .75, 1].map(p => `<span style="left:${p * 100}%">${framesToTC(Math.round(maxEnd * p), tbase)}</span>`).join('');
+  const timeline = parsedSeq.audioTracks.filter(t => t.enabled !== false).map(t => {
+    const cueSegments = musicCues.flatMap(c => c.segments
+      .filter(s => Number(s.trackIndex) === Number(t.index))
+      .map(s => ({ c, s })));
+    const clips = cueSegments.map(({ c, s }) =>
+      `<span class="tl-clip music" data-tl-cue="${escHtml(c.id)}" data-tl-track="${t.index}" title="${escHtml(c.title)} · ${framesToTC(s.start, tbase)}" style="left:${Math.max(0, s.start / maxEnd * 100)}%;width:${Math.max(.18, (s.end - s.start) / maxEnd * 100)}%"></span>`
+    ).join('');
+    return `<div class="tl-track" data-timeline-track="${t.index}"><span class="tl-label" title="${escHtml(t.label)}">${escHtml(t.timelineName || t.label)}</span><div class="tl-lane">${clips}</div></div>`;
+  }).join('');
   const rowsHtml = musicCues.map((c, i) => {
-    // Cue sheet timecodes are always program time (no +1 hour) — standard
-    // cue sheet convention, independent of the Lower Thirds/Textless MASTER
-    // TC toggle above.
     const tcIn = framesToTC(c.start, tbase);
-    const parsed = c.title && c.title !== c.file.replace(/\.[^.]+$/, '')
-      ? ` <span class="muted">— parsed as "${c.title.replace(/</g,'&lt;')}"${c.composer ? ' — ' + c.composer.replace(/</g,'&lt;') : ''}</span>` : '';
-    return `<label style="display:flex;gap:9px;align-items:baseline;padding:4px 2px;border-bottom:1px solid var(--line);color:var(--text);font-size:12.5px">
-      <input type="checkbox" data-song="${i}">
-      <span style="min-width:78px;color:var(--dim);font-family:ui-monospace,monospace">${tcIn}</span>
-      <span style="min-width:110px;color:var(--dim);font-size:11px">${c.trackLabel}</span>
-      <span style="flex:1">${c.file.replace(/</g,'&lt;')}${c.sfxLike ? ` <span style="color:var(--warn)">— looks like SFX</span>` : ''}${parsed}</span>
-      <span class="muted" style="font-size:11px">${framesToTC(c.dur, tbase).slice(3)}</span>
+    const tcOut = framesToTC(c.end, tbase);
+    const checked = selectedCueIds.has(c.id) ? ' checked' : '';
+    const fileList = c.files.map(f => `<div>${escHtml(f)}</div>`).join('');
+    return `<label class="cue-card" data-confidence="${c.confidence}" data-search="${escHtml((c.title + ' ' + c.composer + ' ' + c.files.join(' ')).toLowerCase())}" data-cue-card="${escHtml(c.id)}">
+      <input type="checkbox" data-song="${i}" data-cue-id="${escHtml(c.id)}"${checked}>
+      <span><span class="cue-title">${escHtml(c.title)}</span> <span class="chip ${c.confidence === 'likely' ? 'blue' : 'yellow'}">${c.confidence === 'likely' ? 'Likely music' : 'Needs review'}</span>
+      <div class="cue-meta">${c.composer ? escHtml(c.composer) + ' · ' : ''}${escHtml(c.trackLabel)} · ${c.clipCount} timeline piece${c.clipCount === 1 ? '' : 's'} combined</div>
+      <details class="cue-files"><summary>${c.files.length} source file${c.files.length === 1 ? '' : 's'}</summary>${fileList}</details></span>
+      <span class="cue-time">${tcIn}<br>→ ${tcOut}<br>${framesToTC(c.dur, tbase)} total</span>
     </label>`;
   }).join('');
   $('#auto-songs').innerHTML =
-    `<div class="row" style="margin-bottom:6px"><button class="btn secondary small" id="song-all">Check all</button><button class="btn secondary small" id="song-none">Uncheck all</button><span class="muted">${musicCues.length} clip(s) on your checked track(s) · nothing pre-selected · check the ones that are music</span></div>` + rowsHtml;
-  $('#song-all').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => cb.checked = true);
-  $('#song-none').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => cb.checked = false);
+    `<div class="cue-review-head"><div><b>Music timeline</b><div class="muted">Only WAV/MP3 candidates appear. Hover a cue or timeline block to find the matching pieces.</div></div>
+      <div class="cue-controls"><input type="text" id="cue-search" placeholder="Search title or filename"><select id="cue-filter"><option value="all">All candidates</option><option value="likely">Likely music</option><option value="review">Needs review</option></select><button class="btn secondary small" id="song-likely">Select likely</button><button class="btn secondary small" id="song-none">Clear</button></div></div>
+      <div class="cue-timeline open" id="cue-timeline"><div class="tl-ruler">${ruler}</div>${timeline}</div><div class="muted" style="margin:4px 0 9px"><b>Include</b> the rows that belong on the cue sheet. One row may combine several adjacent cuts or crossfades of the same song.</div>${rowsHtml}`;
+
+  const updateReview = () => {
+    const q = ($('#cue-search').value || '').trim().toLowerCase();
+    const filter = $('#cue-filter').value;
+    document.querySelectorAll('[data-cue-card]').forEach(card => {
+      const confidenceOk = filter === 'all' || card.dataset.confidence === filter;
+      card.style.display = confidenceOk && (!q || card.dataset.search.includes(q)) ? '' : 'none';
+    });
+  };
+  $('#cue-search').oninput = updateReview;
+  $('#cue-filter').onchange = updateReview;
+  $('#song-likely').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => {
+    cb.checked = musicCues[+cb.dataset.song].confidence === 'likely';
+    if (cb.checked) selectedCueIds.add(cb.dataset.cueId); else selectedCueIds.delete(cb.dataset.cueId);
+  });
+  $('#song-none').onclick = () => document.querySelectorAll('[data-song]').forEach(cb => { cb.checked = false; selectedCueIds.delete(cb.dataset.cueId); });
+  document.querySelectorAll('[data-song]').forEach(cb => cb.onchange = () => cb.checked ? selectedCueIds.add(cb.dataset.cueId) : selectedCueIds.delete(cb.dataset.cueId));
+  document.querySelectorAll('[data-cue-card]').forEach(card => {
+    const toggle = on => document.querySelectorAll('[data-tl-cue]').forEach(block => block.classList.toggle('active', on && block.dataset.tlCue === card.dataset.cueCard));
+    card.onmouseenter = () => toggle(true);
+    card.onmouseleave = () => toggle(false);
+  });
+  document.querySelectorAll('[data-tl-cue]').forEach(block => {
+    const toggle = on => {
+      document.querySelectorAll('[data-cue-card]').forEach(card =>
+        card.classList.toggle('active', on && card.dataset.cueCard === block.dataset.tlCue));
+      block.classList.toggle('active', on);
+    };
+    block.onmouseenter = () => toggle(true);
+    block.onmouseleave = () => toggle(false);
+    block.onclick = () => {
+      const card = [...document.querySelectorAll('[data-cue-card]')]
+        .find(item => item.dataset.cueCard === block.dataset.tlCue);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+  });
+  document.querySelectorAll('[data-track-row]').forEach(row => {
+    const trackIndex = row.dataset.trackRow;
+    row.onmouseenter = () => document.querySelectorAll('[data-timeline-track]').forEach(lane => {
+      lane.classList.toggle('active-track', lane.dataset.timelineTrack === trackIndex);
+      lane.classList.toggle('dim-track', lane.dataset.timelineTrack !== trackIndex);
+    });
+    row.onmouseleave = () => document.querySelectorAll('[data-timeline-track]').forEach(lane =>
+      lane.classList.remove('active-track', 'dim-track'));
+  });
+  updateReview();
 }
+$('#cue-generate').onclick = async () => {
+  if (!parsedSeq || !curEp) return;
+  const checkedSongs = musicCues.filter(c => selectedCueIds.has(c.id));
+  if (!checkedSongs.length) {
+    $('#cue-gen-status').textContent = 'Choose at least one music cue first.';
+    return;
+  }
+  const lookup = settings.musicLookup || {};
+  const tbase = parsedSeq.timebase || 30;
+  const rows = checkedSongs.map((c, i) => {
+    const known = lookup[c.title] || lookup[c.file] || {};
+    return {
+      num: String(i + 1), title: c.title,
+      composer: known.composer || c.composer || (c.isEpidemicFormat ? EPIDEMIC.composer : 'NA'),
+      performer: known.performer || '',
+      publisher: known.publisher || (c.isEpidemicFormat ? EPIDEMIC.publisher : 'NA'),
+      society: known.society || EPIDEMIC.society,
+      usage: known.usage || EPIDEMIC.usage,
+      dur: framesToTC(c.dur, tbase),
+      tcin: framesToTC(c.start, tbase),
+      tcout: framesToTC(c.end, tbase),
+    };
+  });
+  const tpl = templates.find(t => t.id === 'cuesheet');
+  const si = tpl.sections.findIndex(s => s.type === 'table');
+  const d = docDraft('cuesheet');
+  d.tables[si] = rows; d.exported = false;
+  curTpl = tpl; await saveDocDraft('cuesheet', d); curTpl = null;
+  document.querySelectorAll('[data-cue-step]').forEach(step => step.classList.add('active'));
+  $('#cue-gen-status').textContent = `✔ Draft created with ${rows.length} cue${rows.length === 1 ? '' : 's'}. Opening it for the final rights and timing check…`;
+  openDoc('cuesheet');
+};
+
 $('#auto-generate').onclick = async () => {
   if (!parsedSeq || !curEp) return;
-  const checkedSongs = [...document.querySelectorAll('[data-song]:checked')].map(el => +el.dataset.song);
   const gfxIdx = [...document.querySelectorAll('[data-vtrack]:checked')].map(el => +el.dataset.vtrack);
-  const lookup = settings.musicLookup || {};
   let made = [];
-
-  // --- Music Cue Sheet draft (from CHECKED song cues) ---
-  // Always program time (no +1 hour) — standard cue sheet convention,
-  // independent of the Lower Thirds/Textless MASTER TC toggle above.
-  if (checkedSongs.length) {
-    const tbase = parsedSeq.timebase || 30;
-    const rows = checkedSongs.map((idx, i) => {
-      const c = musicCues[idx];
-      const known = lookup[c.title] || lookup[c.file] || {};
-      // Only default composer/publisher to Epidemic when the filename was
-      // actually recognized as Epidemic's own "ES_Title - Composer" naming
-      // — defaulting EVERY unrecognized clip to Epidemic shipped a wrong
-      // publisher for real once (Soundly's "SBA-..." files got labeled
-      // Epidemic Sound AB). Unrecognized clips get "NA" instead, so it's
-      // obviously incomplete rather than confidently wrong — society/usage
-      // stay on the shared default since "direct license, background
-      // instrumental" is true for every stock library this show uses, not
-      // just Epidemic specifically.
-      return {
-        num: String(i + 1), title: c.title,
-        composer: known.composer || c.composer || (c.isEpidemicFormat ? EPIDEMIC.composer : 'NA'),
-        publisher: known.publisher || (c.isEpidemicFormat ? EPIDEMIC.publisher : 'NA'),
-        society: known.society || EPIDEMIC.society,
-        usage: known.usage || EPIDEMIC.usage,
-        dur: framesToTC(c.dur, tbase),
-        tcin: framesToTC(c.start, tbase),
-        tcout: framesToTC(c.end, tbase),
-      };
-    });
-    const tpl = templates.find(t => t.id === 'cuesheet');
-    const si = tpl.sections.findIndex(s => s.type === 'table');
-    const d = docDraft('cuesheet'); d.tables[si] = rows; d.exported = false;
-    curTpl = tpl; await saveDocDraft('cuesheet', d); curTpl = null;
-    made.push(`Cue Sheet (${rows.length} cues)`);
-  }
 
   // --- Lower Thirds + Textless logs from graphics tracks + name-pattern matches on ALL video tracks ---
   let patternRe = null;
   const patternStr = ($('#auto-pattern').value || '').trim();
-  if (patternStr) { try { patternRe = new RegExp(patternStr, 'i'); } catch (e) { patternRe = null; } }
+  if (patternStr) {
+    try { patternRe = new RegExp(patternStr, 'i'); }
+    catch (e) { $('#auto-gen-status').textContent = '✖ The graphics name pattern is invalid: ' + e.message; return; }
+  }
   if (gfxIdx.length || patternRe) {
     const fromTracks = parsedSeq.videoTracks.filter(t => gfxIdx.includes(t.index)).flatMap(t => t.clips);
     const fromPattern = patternRe
@@ -1366,8 +1748,8 @@ $('#auto-generate').onclick = async () => {
   }
 
   $('#auto-gen-status').textContent = made.length
-    ? `✔ Drafted: ${made.join(' · ')} — open them below to review. Fill any "composer?" once; the app remembers each track.`
-    : 'Nothing selected — check at least one song cue (or a graphics track).';
+    ? `✔ Drafted: ${made.join(' · ')} — open them below to review.`
+    : 'No graphics clips were selected or matched by filename.';
   renderDocList();
 };
 
@@ -1379,7 +1761,7 @@ async function learnMusicLookup() {
   const rows = d.tables[si] || [];
   settings.musicLookup = settings.musicLookup || {};
   rows.forEach(r => {
-    if (r.title) settings.musicLookup[r.title] = { composer: r.composer, publisher: r.publisher, society: r.society, usage: r.usage };
+    if (r.title) settings.musicLookup[r.title] = { composer: r.composer, performer: r.performer, publisher: r.publisher, society: r.society, usage: r.usage };
   });
   await window.feg.saveSettings(settings);
 }
@@ -1394,7 +1776,9 @@ $('#auto-cap-pick').onclick = async () => {
     const tpl = templates.find(t => t.id === 'abscript');
     const si = tpl.sections.findIndex(s => s.type === 'table');
     const d = docDraft('abscript');
-    d.tables[si] = events.map(ev => ({ tc: ev.tc, speaker: '', text: ev.text }));
+    // Premiere caption exports are normally program-relative (hour 00), while
+    // delivered paperwork uses master time (program at hour 01).
+    d.tables[si] = events.map(ev => ({ tc: /^00:/.test(ev.tc) ? '01:' + ev.tc.slice(3) : ev.tc, speaker: '', text: ev.text }));
     d.exported = false;
     curTpl = tpl; await saveDocDraft('abscript', d); curTpl = null;
     $('#auto-status').textContent = `✔ As-Broadcast Script drafted from ${events.length} caption events — open it below to add speakers & action lines.`;
@@ -1547,7 +1931,7 @@ function renderFxAeps() {
         <b style="color:var(--text)">${classifyLabel(fxGroupView)}</b>
         <span class="muted">(${idxs.length})</span>
       </div>` +
-      idxs.map(i => `<label style="display:flex;gap:8px;align-items:center;margin:3px 0;color:var(--text)"><input type="checkbox" data-aep="${i}" ${fxSelected.has(i) ? 'checked' : ''}> <span class="filepath">${fxAeps[i]}</span></label>`).join('');
+      idxs.map(i => `<label style="display:flex;gap:8px;align-items:center;margin:3px 0;color:var(--text)"><input type="checkbox" data-aep="${i}" ${fxSelected.has(i) ? 'checked' : ''}> <span class="filepath">${escHtml(fxAeps[i])}</span></label>`).join('');
     $('#fx-group-back').onclick = () => { fxGroupView = null; renderFxAeps(); };
     document.querySelectorAll('[data-aep]').forEach(el => {
       el.onchange = () => {
@@ -1604,10 +1988,10 @@ async function runFarmBatch(mode) {
     const results = await window.feg.farmSendBatch(picked, mode, format);
     $('#fx-results').innerHTML = results.map(r =>
       `<div class="filepath" style="margin:3px 0">${r.error
-        ? `<span style="color:var(--fail)">${ICO.no}</span> ${r.aep || ''} — ${r.error}`
+        ? `<span style="color:var(--fail)">${ICO.no}</span> ${escHtml(r.aep || '')} — ${escHtml(r.error)}`
         : r.skipped
-          ? `<span style="color:var(--warn)">${ICO.skip}</span> ${(r.aep || '').split('/').pop()} <span class="muted">— skipped, no text found</span>`
-          : `<span style="color:var(--pass)">${ICO.ok}</span> queued as "${r.row}" (${r.mode}) <span class="muted">(${(r.aep || '').split('/').pop()})</span>`}</div>`).join('');
+          ? `<span style="color:var(--warn)">${ICO.skip}</span> ${escHtml((r.aep || '').split('/').pop())} <span class="muted">— skipped, no text found</span>`
+          : `<span style="color:var(--pass)">${ICO.ok}</span> queued as "${escHtml(r.row)}" (${escHtml(r.mode)}) <span class="muted">(${escHtml((r.aep || '').split('/').pop())})${r.note ? ' — ' + escHtml(r.note) : ''}</span>`}</div>`).join('');
     const ok = results.filter(r => !r.error && !r.skipped).length;
     const skipped = results.filter(r => r.skipped).length;
     $('#fx-run-status').textContent = `Done — ${ok} queued, ${skipped} skipped (no text), ${results.length - ok - skipped} failed.`;
@@ -1630,7 +2014,7 @@ $('#fx-clean').onclick = async () => {
     const r = await window.feg.makeCleanXml({ xmlPath: files[0], pattern });
     $('#fx-clean-status').textContent = `✔ Saved: ${r.outPath.split(/[\\/]/).pop()}`;
     $('#fx-clean-report').innerHTML = r.disabled.length
-      ? `<b style="color:var(--pass)">Disabled ${r.disabled.length} graphic clip type(s):</b> ${r.disabled.slice(0, 25).join(' · ')}${r.disabled.length > 25 ? ' …' : ''}<br>Import this XML, check the timeline shows no graphics, then export as your clean plate.`
+      ? `<b style="color:var(--pass)">Disabled ${r.disabled.length} graphic clip type(s):</b> ${r.disabled.slice(0, 25).map(escHtml).join(' · ')}${r.disabled.length > 25 ? ' …' : ''}<br>Import this XML, check the timeline shows no graphics, then export as your clean plate.`
       : 'No graphics matched the name pattern — adjust the pattern field above (Paperwork stage) and retry.';
   } catch (e) { $('#fx-clean-status').textContent = '✖ ' + e.message; }
 };
@@ -1643,8 +2027,8 @@ $('#fx-xml').onclick = async () => {
     const r = await window.feg.makeTextlessXml({ xmlPath: files[0], pattern: ($('#auto-pattern') ? $('#auto-pattern').value : '') || 'TXT|LT_|LOWER|TITLE|CHYRON|PHOTOVIEWER|SPLITSCREEN|COUNTDOWN|GEARTH|QUOTE|INTRO|BLACKOUT|ONWALL|EVIDENCE|TECHTEXT|VIDEOBOX|(?:^|[_ -])(GEO|SAT)(?:[_ \d-]|$)|_(DEFAULT|ALPHA)(_TEXTLESS)?\.MOV$' });
     $('#fx-xml-status').textContent = `✔ Saved: ${r.outPath}`;
     $('#fx-xml-report').innerHTML =
-      (r.replaced.length ? `<b style="color:var(--pass)">Swapped ${r.replaced.length}:</b> ${r.replaced.join(' · ')}<br>` : 'No clips were swapped — check naming/pattern or run Step 1 first.<br>') +
-      (r.missing.length ? `<b style="color:var(--warn)">⚠ Matched but no _TEXTLESS render found (${r.missing.length}):</b> ${r.missing.join(' · ')} — render these in Step 1, then re-run.` : '');
+      (r.replaced.length ? `<b style="color:var(--pass)">Swapped ${r.replaced.length}:</b> ${r.replaced.map(escHtml).join(' · ')}<br>` : 'No clips were swapped — check naming/pattern or run Step 1 first.<br>') +
+      (r.missing.length ? `<b style="color:var(--warn)">⚠ Matched but no _TEXTLESS render found (${r.missing.length}):</b> ${r.missing.map(escHtml).join(' · ')} — render these in Step 1, then re-run.` : '');
   } catch (e) { $('#fx-xml-status').textContent = '✖ ' + e.message; }
 };
 
@@ -1748,8 +2132,9 @@ $('#stem-build').onclick = async () => {
   if (!folder) { $('#stem-status').textContent = '✖ Set the episode folder first.'; return; }
   $('#stem-build').disabled = true;
   try {
-    stemsOutDir = `${folder}/${settings.distFolderName || 'Distribution'}/03 Audio Stems/16-Track`;
-    const r = await window.feg.stemsBuild({ ...stemFiles, outDir: stemsOutDir });
+    const requestedOutDir = `${folder}/${settings.distFolderName || 'Distribution'}/03 Audio Stems/16-Track`;
+    const r = await window.feg.stemsBuild({ ...stemFiles, outDir: requestedOutDir });
+    stemsOutDir = r.outDir;
     $('#stem-status').innerHTML = `✔ ${r.files.length} tracks built → ${stemsOutDir}` +
       (r.warnings.length ? `<br><span style="color:var(--warn)">⚠ ${r.warnings.join('<br>⚠ ')}</span>` : '');
     $('#stem-embed').disabled = false;
@@ -1768,7 +2153,7 @@ $('#stem-embed').onclick = async () => {
     const out = files[0].replace(/\.mov$/i, '') + '_16TRK.mov';
     const r = await window.feg.stemsEmbed({ video: files[0], stemsDir: stemsOutDir, output: out });
     embeddedFrameRate = r.frameRate || null;
-    $('#stem-status').textContent = `✔ 16-track program master: ${r.output} ${r.warning || ''} — QC it on the Texted Master stage, then Build broadcast master from it.`;
+    $('#stem-status').textContent = `✔ Optional 16-track program master: ${r.output} ${r.warning || ''} — retain for the archive or QC it against the requesting contract.`;
   } catch (e) { $('#stem-status').textContent = '✖ ' + e.message; }
   $('#stem-embed').disabled = false;
 };
@@ -1777,9 +2162,10 @@ $('#stem-pad').onclick = async () => {
   if (!stemsOutDir) return;
   $('#stem-pad').disabled = true;
   try {
-    const outDir = stemsOutDir.replace(/16-Track$/, 'Master-Aligned Sidecars');
+    const audioRoot = stemsOutDir.replace(/[\\/]16-Track(?: v\d+)?$/, '');
+    const outDir = `${audioRoot}/Master-Aligned Sidecars`;
     const r = await window.feg.stemsPad({ stemsDir: stemsOutDir, outDir, originator: settings.companyName || 'Production Company', frameRate: embeddedFrameRate || undefined });
-    $('#stem-status').textContent = `✔ ${r.files.length} master-aligned sidecars → ${outDir}`;
+    $('#stem-status').textContent = `✔ ${r.files.length} master-aligned sidecars → ${r.outDir}`;
     try { await window.feg.notionSetAsset({ pageId: curEp.id, asset: 'Audio Stems', status: 'Ready' }); curEp.assets['Audio Stems'] = 'Ready'; } catch (e) { /* optional */ }
   } catch (e) { $('#stem-status').textContent = '✖ ' + e.message; }
   $('#stem-pad').disabled = false;
@@ -1816,7 +2202,7 @@ $('#ocr-run').onclick = async () => {
     $('#ocr-status').textContent = `Done — ${r.checkedFrames} frames scanned, ${r.hits.length} text region(s) found.`;
     $('#ocr-report').innerHTML = r.hits.length
       ? `<table><thead><tr><th style="width:90px">From</th><th style="width:90px">To</th><th style="width:60px">Conf.</th><th>Detected text (review — could be leftover graphic OR bodycam OSD)</th></tr></thead><tbody>` +
-        r.hits.map(h => `<tr><td>${h.tc}</td><td>${h.tcEnd}</td><td>${h.confidence}%</td><td>${h.text.replace(/</g, '&lt;')}</td></tr>`).join('') + '</tbody></table>'
+        r.hits.map(h => `<tr><td>${escHtml(h.tc)}</td><td>${escHtml(h.tcEnd)}</td><td>${escHtml(h.confidence)}%</td><td>${escHtml(h.text)}</td></tr>`).join('') + '</tbody></table>'
       : `<p class="muted">${ICO.ok} No text detected outside the ignored strips — textless looks clean.</p>`;
   } catch (e) {
     $('#ocr-status').textContent = '✖ ' + e.message;
@@ -1842,6 +2228,18 @@ $('#set-save2').onclick = async () => {
   settings.companyName = $('#set-company').value.trim();
   await window.feg.saveSettings(settings);
   $('#set-status2').textContent = '✔ Saved';
+};
+$('#set-music-save').onclick = async () => {
+  const dirs = $('#set-sfx-dirs').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const gap = Number($('#set-music-gap').value);
+  if (!Number.isFinite(gap) || gap < 0 || gap > 30) {
+    $('#set-music-status').textContent = '✖ Merge gap must be between 0 and 30 seconds.';
+    return;
+  }
+  settings.musicSfxExclusionDirs = dirs;
+  settings.musicCueMergeGapSeconds = gap;
+  await window.feg.saveSettings(settings);
+  $('#set-music-status').textContent = `✔ Saved ${dirs.length} exclusion folder${dirs.length === 1 ? '' : 's'} and ${gap}s merge gap.`;
 };
 $('#set-farm-save').onclick = async () => {
   settings.farmRelayUrl = $('#set-relay-url').value.trim();

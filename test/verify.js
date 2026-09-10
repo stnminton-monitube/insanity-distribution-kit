@@ -41,8 +41,16 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   ok('no duplicate element ids', new Set(ids).size === ids.length);
 
   console.log('\n== 2. Structure ==');
+  const pkg = require(path.join(ROOT, 'package.json'));
+  ok('app is branded as Insanity Distribution Kit throughout',
+    pkg.name === 'insanity-distribution-kit' && pkg.productName === 'Insanity Distribution Kit' &&
+    /<title>Insanity Distribution Kit<\/title>/.test(html) && />Insanity Distribution Kit<\/h1>/.test(html));
+  ok('packaged and in-app icon assets exist',
+    fs.existsSync(path.join(ROOT, 'assets/icon.png')) && fs.existsSync(path.join(ROOT, 'assets/icon.icns')) &&
+    pkg.build.mac.icon === 'assets/icon.icns' && pkg.build.win.icon === 'assets/icon.png');
   ok('templates', require(path.join(ROOT, 'lib/templates.js')).TEMPLATES.length >= 14);
-  ok('stages = 10', require(path.join(ROOT, 'lib/stages.js')).STAGES.length === 10);
+  const stages = require(path.join(ROOT, 'lib/stages.js')).STAGES;
+  ok('platform-first stages + optional extras', stages.length === 14 && stages.slice(0, 7).every(s => !s.optional) && stages.slice(7).every(s => s.optional) && stages.some(s => s.id === 'broadcast'), `${stages.length} stages`);
   const guide = require(path.join(ROOT, 'lib/guide.js')).GUIDE_STEPS;
   ok('guide steps all have diagrams', guide.every(s => s.svg), `${guide.length} steps`);
   const sf = require(path.join(ROOT, 'lib/stemforge.js'));
@@ -50,6 +58,59 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   const gridCount = sf.STEM_GRID.reduce((n, s) =>
     n + (s.has51 ? 6 : 0) + (s.has20 ? 2 : 0) + (s.has10 ? 1 : 0), 0);
   ok('stem grid = 60 files', gridCount === 60, `${gridCount}`);
+  const { versionedPath } = require(path.join(ROOT, 'lib/filepaths.js'));
+  const occupied = path.join(TMP, 'output.mov');
+  fs.writeFileSync(occupied, 'keep');
+  ok('generated outputs version instead of overwriting existing paths',
+    versionedPath(occupied) === path.join(TMP, 'output v2.mov') && fs.readFileSync(occupied, 'utf8') === 'keep');
+
+  console.log('\n== 2a. Platform profiles & 18-column metadata ==');
+  const dist = require(path.join(ROOT, 'lib/distribution.js'));
+  ok('metadata schema maps all 18 sheet columns in order',
+    dist.METADATA_FIELDS.length === 18 &&
+    dist.METADATA_FIELDS[0].label === 'SERIES NAME // FILM NAME' &&
+    dist.METADATA_FIELDS[17].label === 'YOUTUBE LINK');
+  const metadata = {
+    seriesName: 'Example Series', season: '1', episode: '2', episodeTitle: 'Example Episode',
+    cast: 'One Person, Two Person, Three Person', crew: 'Director Name, Producer Name',
+    description: 'A concise example episode description.', premiereDate: '09/2026',
+    subgenre: 'Documentary', runtime: '24', keywords: 'police, documentary, investigation',
+    country: 'United States, Michigan', videoQuality: 'HD', closedCaptioning: 'TRUE',
+    imdb: 'https://www.imdb.com/title/tt1234567/', adIntegration: 'None',
+    callToAction: 'None', youtubeLink: 'https://youtu.be/example',
+  };
+  ok('complete metadata row passes validation', dist.validateMetadata(metadata).length === 0);
+  ok('metadata validation catches sheet rules',
+    dist.validateMetadata({ ...metadata, cast: 'One, Two', description: 'x'.repeat(121), premiereDate: '2026-09' }).length === 3);
+  const metadataCsv = dist.metadataCsv(metadata).trim().split('\n');
+  ok('metadata CSV exports exactly one 18-column row',
+    metadataCsv.length === 2 && (metadataCsv[0].match(/","/g) || []).length === 17 && (metadataCsv[1].match(/","/g) || []).length === 17);
+  ok('profiles keep conflicting frame-rate and bitrate rules separate',
+    dist.PLATFORM_PROFILES.general.minMbpsHD === 9 &&
+    dist.PLATFORM_PROFILES.general.frameRates === null &&
+    dist.PLATFORM_PROFILES.filmhub.minMbpsHD === 15 &&
+    dist.PLATFORM_PROFILES.filmhub.frameRates.includes('24000/1001'));
+
+  const goodSrt = path.join(TMP, 'good.srt');
+  fs.writeFileSync(goodSrt, '1\n00:00:01,000 --> 00:00:03,000\nHello there.\n\n2\n00:00:03,100 --> 00:00:05,000\n(door closes)\n');
+  const { checkCaptions } = require(path.join(ROOT, 'lib/captionqc.js'));
+  ok('caption QC accepts a structurally clean SRT', !checkCaptions(goodSrt, 'filmhub').some(r => r.level === 'fail'));
+  const badSrt = path.join(TMP, 'bad-captions.srt');
+  fs.writeFileSync(badSrt, 'x\n00:00:01,000 --> 00:00:01,200\nThis caption line is far beyond forty-three characters and cannot stay this short.\n');
+  const captionFails = checkCaptions(badSrt, 'filmhub').filter(r => r.level === 'fail');
+  ok('caption QC catches IDs, line length, duration, and reading speed', captionFails.length >= 4, `${captionFails.length} failures`);
+  const fakeVtt = path.join(TMP, 'captions.vtt'); fs.writeFileSync(fakeVtt, 'WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHello\n');
+  ok('Filmhub profile rejects VTT while general profile accepts it',
+    checkCaptions(fakeVtt, 'filmhub')[0].level === 'fail' && checkCaptions(fakeVtt, 'general')[0].level === 'pass');
+  const artGood = path.join(TMP, 'art-16x9.png');
+  const artBad = path.join(TMP, 'art-wrong.png');
+  ff(['-f', 'lavfi', '-i', 'color=c=blue:s=1920x1080', '-frames:v', '1', artGood]);
+  ff(['-f', 'lavfi', '-i', 'color=c=blue:s=1280x720', '-frames:v', '1', artBad]);
+  const { checkArtwork } = require(path.join(ROOT, 'lib/artwork.js'));
+  const artGoodResult = await checkArtwork(artGood, 'general', 'landscape');
+  const artBadResult = await checkArtwork(artBad, 'general', 'landscape');
+  ok('artwork checker accepts the exact 1920x1080 general slot', !artGoodResult.some(r => r.level === 'fail'));
+  ok('artwork checker rejects undersized art', artBadResult.some(r => r.check === 'Dimensions' && r.level === 'fail'));
 
   console.log('\n== 2b. Runtime classification ==');
   const { classifyRuntime } = require(path.join(ROOT, 'lib/checklist.js'));
@@ -89,6 +150,10 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
     '-c:a', 'aac', path.join(TMP, 'badwrap.mp4')]);
   const qcWrap = await runQC(path.join(TMP, 'badwrap.mp4'));
   ok('QC catches wrong wrapper (MP4 instead of MOV)', failReason(qcWrap, 'Wrapper') === 'fail');
+  const { runProfileQC } = require(path.join(ROOT, 'lib/qc.js'));
+  const generalQc = await runProfileQC(path.join(TMP, 'badwrap.mp4'), 'general');
+  ok('general streaming QC accepts MP4/H.264 container and codec',
+    failReason(generalQc, 'Container') === 'pass' && failReason(generalQc, 'Video codec') === 'pass');
   const renamedPath = path.join(TMP, 'renamed.mov');
   fs.copyFileSync(path.join(TMP, 'badwrap.mp4'), renamedPath);
   const qcRenamed = await runQC(renamedPath);
@@ -111,6 +176,14 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
     '-c:a', 'pcm_s24le', path.join(TMP, 'badfps.mov')]);
   const qcFps = await runQC(path.join(TMP, 'badfps.mov'));
   ok('QC catches wrong frame rate (25fps PAL)', failReason(qcFps, 'Frame rate') === 'fail');
+  ff(['-f', 'lavfi', '-i', 'testsrc2=s=1920x1080:r=24000/1001', '-f', 'lavfi', '-i', 'sine=f=440:r=48000',
+    '-map', '0:v', '-map', '1:a', '-t', '1', '-c:v', 'prores_ks', '-profile:v', '3', '-pix_fmt', 'yuv422p10le',
+    '-c:a', 'pcm_s24le', path.join(TMP, 'nonhousefps.mov')]);
+  const qcNonHouse = await runQC(path.join(TMP, 'nonhousefps.mov'));
+  ok('Legacy broadcast QC rejects 23.976 against its retained 29.97 house standard', failReason(qcNonHouse, 'Frame rate') === 'fail');
+  const filmhubNative = await runProfileQC(path.join(TMP, 'nonhousefps.mov'), 'filmhub');
+  ok('Filmhub profile accepts native 23.976 instead of forcing the legacy house rate',
+    failReason(filmhubNative, 'Frame rate') === 'pass');
 
   const amap2 = []; for (let i = 0; i < 2; i++) amap2.push('-map', '1:a');
   ff(['-f', 'lavfi', '-i', 'testsrc2=s=1920x1080:r=30000/1001', '-f', 'lavfi', '-i', 'sine=f=440:r=48000',
@@ -166,6 +239,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   const masterToneRms = execSync(`${FFMPEG} -ss 45 -t 1 -i "${built2.output}" -map 0:a:0 -af astats=metadata=0 -f null - 2>&1 | grep "RMS level dB" | head -1`).toString();
   const masterRmsVal = parseFloat((masterToneRms.match(/RMS level dB:\s*(-?[\d.]+)/) || [])[1]);
   ok('broadcast master tone measures -20dBFS RMS', Math.abs(masterRmsVal - -20) < 0.5, `${masterRmsVal}dB`);
+  ok('buildMaster refuses to wrap an already wrapped broadcast master twice',
+    await (async () => { try { await buildMaster({ input: built2.output, output: path.join(TMP, 'double.mov') }); return false; } catch (e) { return /already starts at 00:58/.test(e.message); } })());
   // The real regression guard: sidecars and the video master must land at the same
   // real-world duration, or they drift out of sync (this exact bug shipped once —
   // sidecars padded with naive 30.000s blocks while the video's frame-counted head
@@ -195,6 +270,9 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   const sccparse = require(path.join(ROOT, 'lib/sccparse.js'));
   const retimed = sccparse.retimeCaptionFile(path.join(TMP, 'x.scc'));
   ok('captions retime +1hr', /01:00:05;12/.test(fs.readFileSync(retimed, 'utf8')));
+  const retimed2 = sccparse.retimeCaptionFile(path.join(TMP, 'x.scc'));
+  ok('caption retiming preserves an existing output by creating a version',
+    retimed2 !== retimed && fs.existsSync(retimed) && / v2\.scc$/.test(retimed2));
 
   // parseCaptions was only exercised indirectly (via retime) — never for actual text
   // extraction. Real CEA-608 byte pairs (parity-masked, so any parity bit works):
@@ -213,6 +291,40 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   // ms→frame must use the 29.97fps house standard, not a hardcoded 25fps (PAL) divisor —
   // this app never delivers at 25fps. 500ms ≈ frame 15 at 29.97fps (was frame 12 at 25fps).
   ok('SRT converts ms to frame number at 29.97fps, not 25fps', srtEvents[0].tc === '00:00:05:15');
+
+  console.log('\n== 4a. Professional music cue grouping & SFX exclusion ==');
+  const musiccue = require(path.join(ROOT, 'lib/musiccue.js'));
+  const sharedSfx = path.join(TMP, 'shared-sfx');
+  const episodeRoot = path.join(TMP, 'episode-music');
+  const localSfx = path.join(episodeRoot, 'Audio', 'Sound Effects');
+  fs.mkdirSync(sharedSfx, { recursive: true });
+  fs.mkdirSync(localSfx, { recursive: true });
+  fs.writeFileSync(path.join(sharedSfx, 'ES_Sending Shivers - Ethan Sloan.mp3'), '');
+  fs.writeFileSync(path.join(sharedSfx, 'Boom Hit.wav'), '');
+  fs.writeFileSync(path.join(localSfx, 'Room Tone.wav'), '');
+  fs.writeFileSync(path.join(localSfx, 'Rescue Theme [music].wav'), '');
+  const cueSeq = { timebase: 30, audioTracks: [{ index: 1, enabled: true, label: 'MX · Audio track #1', timelineName: 'MX', clips: [
+    { name: 'ES_123_True Story - Alice Stone.wav', start: 0, durFrames: 100 },
+    { name: 'ES_123_True Story - Alice Stone_melody.wav', start: 90, durFrames: 110 },
+    { name: 'ES_123_True Story - Alice Stone Audio Extracted.wav', start: 250, durFrames: 50 },
+    { name: 'ES_123_True Story - Alice Stone.wav', start: 600, durFrames: 90 },
+    { name: 'ES_Sending Shivers - Ethan Sloan Audio Extracted.wav', start: 320, durFrames: 30 },
+    { name: 'Room Tone.wav', start: 360, durFrames: 30 },
+    { name: 'Rescue Theme [music].wav', start: 400, durFrames: 60 },
+    { name: 'Open Horizon - Jordan Lee.wav', start: 480, durFrames: 60 },
+    { name: 'Episode Camera Original.mp4', start: 540, durFrames: 60 },
+    { name: 'Old Library Track.aiff', start: 550, durFrames: 60 },
+  ] }] };
+  const cueAnalysis = musiccue.analyzeMusicCues(cueSeq, [1], { exclusionDirs: [sharedSfx], episodeFolder: episodeRoot, gapSeconds: 5 });
+  const trueStory = cueAnalysis.cues.filter(c => c.title === 'True Story');
+  ok('same song crossfades, stem pieces, and short gaps merge into one use', trueStory.length === 2 && trueStory[0].clipCount === 3 && trueStory[0].start === 0 && trueStory[0].end === 300);
+  ok('a genuinely later repeat remains a separate cue occurrence', trueStory[1].start === 600 && trueStory[1].end === 690);
+  ok('every matching shared-library SFX filename is hard-excluded, even if its name resembles music', cueAnalysis.excludedLibrary === 1 && !cueAnalysis.cues.some(c => /Sending Shivers/.test(c.title)));
+  ok('episode-local SFX folders exclude ordinary effects but retain strongly music-labeled files for review', cueAnalysis.excludedLocal === 1 && cueAnalysis.cues.some(c => /Rescue Theme/.test(c.title)));
+  ok('conventional non-Epidemic Title - Composer filenames are likely music', cueAnalysis.cues.some(c => c.title === 'Open Horizon' && c.composer === 'Jordan Lee' && c.confidence === 'likely'));
+  ok('music candidates are WAV/MP3 only; MP4 embedded audio and other formats are skipped',
+    cueAnalysis.excludedFormat === 2 && !cueAnalysis.cues.some(c => /Camera Original|Old Library/.test(c.title)));
+  ok('SFX matching survives Premiere Audio Extracted suffixes and media-extension differences', musiccue.normalizedAssetKey('Boom Hit.wav Audio Extracted.wav') === musiccue.normalizedAssetKey('Boom Hit.wav'));
 
   console.log('\n== 4b. After Effects project scanning + render farm payload logic ==');
   const aepinspect = require(path.join(ROOT, 'lib/aepinspect.js'));
@@ -238,6 +350,10 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
     /disabled === 0/.test(disableJsx) && /"skipped":true/.test(disableJsx));
   ok('buildDisableAndSaveJsx never uses Array.prototype.map (this AE\'s ExtendScript engine doesn\'t support it — hit this exact bug once)',
     !/\.map\(/.test(disableJsx));
+  fs.writeFileSync(path.join(TMP, 'proj/Blocked.aep'), '');
+  fs.writeFileSync(path.join(TMP, 'proj/Blocked_TEXTLESS.aep'), 'keep');
+  ok('textless AEP creation refuses to overwrite the exact sibling the relay uses',
+    await (async () => { try { await aepinspect.disableTextAndSave(path.join(TMP, 'proj/Blocked.aep')); return false; } catch (e) { return /already exists/.test(e.message); } })());
 
   const renderfarm = require(path.join(ROOT, 'lib/renderfarm.js'));
   const anchor = 'Insanity Media Dropbox';
@@ -251,6 +367,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
     renderfarm.findProjectFolderName('/Vol/Insanity Media Dropbox/Insanity/Video/2 Ayoub/IB50 - Steven Douglas/3 After Effects PROJECTS/K_LT_1.aep') === 'IB50 - Steven Douglas');
   ok('findProjectFolderName also matches a hyphenated code like TUBI-1',
     renderfarm.findProjectFolderName('/Vol/Dropbox/Video/TUBI-1 - Some Show/AE/thing.aep') === 'TUBI-1 - Some Show');
+  ok('render-farm both mode still queues texted when no textless variant exists',
+    renderfarm.modeAfterTextCheck('both', true) === 'texted' && renderfarm.modeAfterTextCheck('textless', true) === 'textless');
 
   // This app no longer talks to Notion/Dropbox directly — that moved to the
   // centralized relay (insanity-dashboard's own renderfarm.js, a separate
@@ -319,6 +437,7 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
       ok: true, json: async () => ({
         results: [
           { id: 't', url: 'ut', properties: { Episode: { title: [{ plain_text: '📋 TEMPLATE' }] } } },
+          { id: 'blank', url: 'ub', properties: { Episode: { title: [] } } },
           { id: 'e1', url: 'ue1', properties: { Episode: { title: [{ plain_text: 'S01E01' }] }, 'Texted Video': { select: { name: 'QC Passed' } } } },
         ],
         has_more: pageCalls === 1, next_cursor: pageCalls === 1 ? 'c2' : null,
@@ -327,7 +446,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   };
   const eps = await notion.listEpisodes('tok', dbId);
   ok('listEpisodes follows pagination (has_more/next_cursor)', pageCalls === 2);
-  ok('listEpisodes filters out the 📋 TEMPLATE row', !eps.some(e => /TEMPLATE/.test(e.title)));
+  ok('listEpisodes filters out template and blank rows',
+    eps.length === 2 && !eps.some(e => /TEMPLATE/.test(e.title) || !e.title.trim()));
   ok('listEpisodes maps asset select values incl. the newer Textless No Graphics property',
     eps[0].assets['Texted Video'] === 'QC Passed' && eps[0].assets['Textless No Graphics'] === 'Not started');
   global.fetch = realFetch;
@@ -350,6 +470,10 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   const cleanOut = fs.readFileSync(cl.outPath, 'utf8');
   ok('clean XML disables graphics, keeps footage',
     cl.disabled.length === 1 && /LT_x<\/name><enabled>FALSE/.test(cleanOut) && /cam<\/name><enabled>TRUE/.test(cleanOut));
+  const tl2 = px.makeTextlessXML(path.join(TMP, 'seq.xml'), 'TXT|LT_');
+  ok('textless XML rewrite versions a pre-existing output', tl2.outPath !== tl.outPath && / v2\.xml$/.test(tl2.outPath));
+  ok('invalid graphics regex fails loudly instead of silently matching nothing',
+    (() => { try { px.makeCleanXML(path.join(TMP, 'seq.xml'), '['); return false; } catch (e) { return /pattern is invalid/.test(e.message); } })());
 
   // ---- CLAUDE.md's 5 documented parseSequenceXML bugs, each individually regression-tested ----
   const nestedXml = `<xmeml version="4"><sequence id="master"><name>M</name>
@@ -385,7 +509,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
 <audio>
 <track><clipitem><name>Music.wav</name><start>0</start><end>50</end><in>0</in><out>50</out></clipitem>
 <transitionitem><start>45</start><end>55</end></transitionitem>
-<clipitem><name>Music.wav</name><start>-1</start><end>-1</end><in>0</in><out>50</out></clipitem></track>
+<clipitem><name>Music.wav</name><start>-1</start><end>-1</end><in>0</in><out>50</out></clipitem>
+<clipitem><name>Disabled Music.wav</name><enabled>FALSE</enabled><start>200</start><end>250</end><in>0</in><out>50</out></clipitem></track>
 <track><clipitem><name>MusicL.wav</name><start>100</start><end>150</end><in>0</in><out>50</out></clipitem></track>
 <track><clipitem><name>MusicL.wav</name><start>100</start><end>150</end><in>0</in><out>50</out></clipitem></track>
 <track><clipitem><name>Dialogue.wav</name><start>300</start><end>350</end><in>0</in><out>50</out></clipitem></track>
@@ -396,6 +521,8 @@ const ff = args => execFileSync(FFMPEG, ['-y', '-v', 'error', ...args], { stdio:
   const xfadeMusic = xfadeParsed.audioTracks[0].clips;
   ok('bug#3 crossfaded (-1/-1) clip recovers position from neighboring transitionitem',
     xfadeMusic.length === 2 && xfadeMusic[1].start === 45 && xfadeMusic[1].end === 95);
+  ok('disabled individual audio clips are excluded from XML analysis',
+    !xfadeParsed.audioTracks.some(t => t.clips.some(c => c.name === 'Disabled Music.wav')));
   ok('bug#4 identical-clip audio tracks merge into one stereo-flagged logical track',
     xfadeParsed.audioTracks.some(t => /·st/.test(t.label) && t.clips.map(c => c.name).join() === 'MusicL.wav'));
   ok('bug#4 unrelated audio tracks (0% overlap) do NOT merge', xfadeParsed.audioTracks.length === 4);

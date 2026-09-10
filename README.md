@@ -1,36 +1,112 @@
-# Media Distribution Toolkit
+# Insanity Distribution Kit
 
-A guided desktop app (Mac + Windows) for preparing episodes for traditional media distribution — QC, broadcast mastering, Dropbox filing, and Notion tracking in one workflow.
+A desktop app for preparing episodic or standalone titles for streaming
+distribution. It combines platform-specific QC, an internal 18-column metadata
+sheet, caption review, artwork slots, compliance tracking, filing, and optional
+Notion sync.
 
-The specs it enforces are strong industry defaults for broadcast/international delivery. Always confirm your specific distributor's requirements.
+`DELIVERABLES.md` is the maintained specification. Requirements are selected
+per platform so Filmhub, the internal AVOD/TVOD/SVOD checklist, and future
+contract specs never collapse into one conflicting preset.
 
-## How it works
+## Primary workflow
 
-**Dashboard** — your episodes, pulled live from the Distribution Catalog in Notion, each showing pipeline status and per-asset progress dots. Click one to open it.
+1. **Target & Requirements** - select General AVOD/TVOD/SVOD, Filmhub, or a
+   Custom/Contract profile.
+2. **Metadata Sheet** - fill and validate all 18 destination-sheet columns;
+   copy one tab-separated row or export CSV.
+3. **Clean Program Master** - platform-aware video/audio QC with no broadcast
+   bars, slate, tone, leader, or textless tail.
+4. **Captions & Accessibility** - SRT/VTT/SCC acceptance by target plus
+   structural quality checks and explicit human sync/accuracy review.
+5. **Artwork & Key Art** - required/recommended slots, dimensions, aspect
+   ratios, and layered-source retention.
+6. **Ads, Sponsors & CTA** - sponsor/CTA decisions and frame-accurate ad-break
+   or chapter logging.
+7. **QC Gates & Delivery** - one completion board spanning video, captions,
+   art, metadata, compliance, rights, naming, and delivery.
 
-**Episode page** — set the episode's own Dropbox folder once (the app files everything into a `Distribution` subfolder inside it, and writes the path to Notion). Below that, the 8 workflow stages in order:
+The old broadcast tools remain under **Advanced & optional tools** on every episode: paperwork, timing
+data, render farm, textless/clean plates, ProRes wrapping, 16-track masters,
+60 sidecar stems, and SCC utilities. You can open and use them at any time;
+they simply do not block an ordinary streaming delivery when they are unnecessary.
 
-1. 🎬 Prep & Export · 2. 🎞️ Texted Master · 3. 🕳️ Textless · 4. 🎚️ Audio Stems · 5. 💬 Captions · 6. ⏱️ Segment Timings · 7. 📄 Paperwork · 8. 📦 Package & Deliver
+Files are never overwritten. Repeated output names are versioned as ` v2`,
+` v3`, and so on.
 
-**Stage pages** — every stage opens into a full explanation of what it is, why it matters, and the exact requirements — plus a drop zone. Drop a file and the app checks it (full QC for video, format checks for WAVs/captions/timings), files it into the right Dropbox subfolder (`01 Master`, `02 Textless`, `03 Audio Stems`, `04 Captions`, `05 Segment Timings`, `06 Docs`), and updates the episode's Notion row (asset status, QC notes, timestamps, Dropbox path). Video stages also offer **Build broadcast master** — wraps your export with bars/tone/slate/blacks (program at timecode 01:00:00:00) without re-encoding. Skip it when a distributor wants a clean program-only file.
+## Episode metadata
 
-Files are never overwritten — repeat drops get versioned (` v2`, ` v3`…).
+The internal sheet maps the destination spreadsheet exactly:
 
-## Setup
+`SERIES NAME // FILM NAME`, `SEASON #`, `EPISODE #`, `EPISODE TITLE`,
+`CAST`, `CREW`, `SERIES/ VIDEO DESCRIPTION`, `ORIGINAL PREMIERE DATE`,
+`SUBGENRE`, `RUNTIME`, `KEYWORDS`, `COUNTRY OF ORIGIN`, `VIDEO QUALITY`,
+`CLOSED CAPTIONING`, `IMDB`, `AD INTEGRATION`, `CALL TO ACTION`,
+`YOUTUBE LINK`.
 
-1. Install Node.js (LTS) from nodejs.org
-2. Double-click `Start FEG Toolkit (Mac).command` (or the `.bat` on Windows). First run downloads components; the launcher self-repairs interrupted downloads.
-3. In **Settings**: paste your Notion integration token + the Distribution Catalog database link. (Create the token at notion.so/profile/integrations, then add the integration to your Media Distribution Hub page via ⋯ → Connections.)
+Drafts, selected platform, artwork assignments, compliance notes, and gate
+states save locally. Notion is optional; without it, the dashboard stores local
+episodes.
 
-## Building installable apps
+## Music cue review
 
-`npm run dist:mac` / `npm run dist:win` (run on the target platform) → installer in `dist/`.
+Open **Paperwork & Documents → Music Cue Builder**. This dedicated four-step
+workspace loads the Premiere XML, reviews enabled tracks, shows the visual music
+timeline and cue rows, then creates an editable draft. Only WAV and MP3 assets
+are considered music; MP4 embedded audio and every other format are skipped.
+Likely music is selected by default, while uncertain candidates stay visible
+and clearly marked for review.
 
-## Known limitations (honest list)
+The supplied shared Sound Effects directory is indexed as a hard exclusion.
+Episode folders named `Sound Effects`, `SFX`, or `Sound Design` are detected as
+additional cautious exclusions; an explicitly music-labelled or conventionally
+named track is retained for review in case it was filed there accidentally.
+Hovering a cue highlights its timeline pieces, and hovering a timeline piece
+highlights the cue. Hovering a track row spotlights that lane. Exclusion folders
+and the edit-merge gap are editable in Settings.
 
-- Not a substitute for your distributor's QC — picture quality, title safe, caption sync, and content rules stay human checks.
-- Audio track ORDER can't be auto-verified — the app checks count/format only.
-- Caption checks are file-type only; use a caption tool for sync/styling.
-- Notion token is stored in a local settings file, plain text.
-- Timecode on built masters is non-drop-frame.
-- Get your distributor's naming conventions before delivering — the app deliberately doesn't guess them.
+This creates a reviewable draft, not a licensing assertion. Confirm composition
+title, writers, publisher, performer, PRO, usage, and timecodes before signing
+or sending the generated cue sheet.
+
+## Install for testing
+
+Installers from GitHub Releases do not require Node.js or developer tools.
+
+**Windows:** Download the latest EXE, double-click it, and follow the installer.
+If SmartScreen appears because this internal trial is not code-signed, choose
+**More info → Run anyway** only when the file came from this repository.
+
+**macOS:** Download the latest DMG, open it, and drag the app to Applications.
+If macOS blocks the unsigned internal trial, Control-click the app, choose
+**Open**, then confirm.
+
+The core streaming, metadata, caption, artwork, paperwork, XML, cue-sheet, and
+QC tools work on Windows and macOS. Local After Effects text-layer automation
+uses AppleScript and is macOS-only. Notion and the render-farm relay are
+optional connections configured in Settings.
+
+## Developer setup
+
+1. Install Node.js LTS.
+2. Run `npm ci`.
+3. Run `npm start`.
+
+Run `npm test` after changing anything in `lib/` or the renderer script.
+
+## Building
+
+Run `npm run dist:mac` or `npm run dist:win` on the target platform.
+Installers are written to `dist/`. GitHub Actions builds both installers on
+their native operating systems when a version tag such as `v2.1.0` is pushed.
+
+## Honest limits
+
+- A machine cannot replace the required end-to-end picture/audio watch,
+  caption sync/accuracy review, artwork quality review, sponsor/CTA judgment,
+  metadata fact-check, rights confirmation, or portal acceptance.
+- Contract and platform requirements change. Reconfirm the live specification
+  before delivery.
+- Disabled individual Premiere clips carrying `<enabled>FALSE</enabled>` are
+  ignored. Whole-track mute XML remains best-effort because it is not part of
+  the production workflow described for this tool.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Double-click launcher for Media Distribution Toolkit (Mac)
+# Double-click launcher for Insanity Distribution Kit (Mac)
 cd "$(dirname "$0")"
 
 if ! command -v npm >/dev/null 2>&1; then
@@ -72,5 +72,5 @@ if [ -d node_modules/ffmpeg-static ] && [ ! -f node_modules/ffmpeg-static/ffmpeg
   ( cd node_modules/ffmpeg-static && node install.js ) || echo "FFmpeg download failed — QC/Build tabs may not work until this succeeds."
 fi
 
-echo "Starting Media Distribution Toolkit..."
+echo "Starting Insanity Distribution Kit..."
 npm start

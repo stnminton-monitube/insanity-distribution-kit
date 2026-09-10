@@ -1,4 +1,4 @@
-# Handoff notes — Media Distribution Toolkit
+# Handoff notes — Insanity Distribution Kit
 
 Written 2026-09-09, moving primary development from Claude Code to Codex.
 This is a supplement to `CLAUDE.md` (read that first — it's the real spec),
@@ -7,28 +7,19 @@ open, and which existing docs in this repo are stale and why.
 
 ## Verified current state (checked today, not from memory)
 
-- `npm test` → **105/105 passing**, right now, on this exact code.
+- `npm test` → **141/141 passing**, right now, on this exact code.
 - App launches cleanly (`npm start` → real Electron GUI on macOS).
-- `lib/` has 15 modules (CLAUDE.md's own module table lists all 15 correctly;
-  its prose header says "14 modules" — trivial off-by-one in the text, not
-  worth fixing by itself, just don't be confused by it).
-- `lib/stages.js` defines **10 stages**, in this order: `prep`, `renderfarm`,
-  `texted`, `textless`, `textless_nogfx`, `stems`, `captions`, `timings`,
-  `paperwork`, `deliver`. (See "stale docs" below — `README.md` still
-  describes an older 8-stage list.)
+- `lib/` now has 21 modules. The new platform layer lives in
+  `distribution.js`, `streamqc.js`, `captionqc.js`, and `artwork.js`.
+- `lib/stages.js` defines **7 required platform-first stages** followed by
+  **7 always-accessible advanced/optional tools**. `README.md` and `DELIVERABLES.md` match.
 - This repo had **no git history** until today. I initialized one with a
   single baseline commit of the current working state, specifically so this
   handoff has a clean starting point to diff against.
 
-## Known-stale existing docs — read these with a critical eye
+## Documentation status
 
-- **`README.md`**: lists "8 workflow stages · 1-8", naming an older set
-  (Prep & Export / Texted Master / Textless / Audio Stems / Captions /
-  Segment Timings / Paperwork / Package & Deliver). The real current list is
-  the 10 above — Render Farm was added as stage 2, and Textless split into
-  two variants (with/without graphics). I have not rewritten `README.md`'s
-  stage list myself — flagging it here rather than silently editing
-  user-facing docs without being asked.
+- **`README.md`** now documents the current platform-first workflow.
 - **`INTEGRATION.md`**: describes a plan to add a Distribution tab to the
   Insanity Premiere panel, and states plainly that `insanity-premiere` (UXP)
   is "the live Premiere panel" while `insanity-premiere-cep` (CEP) is
@@ -48,12 +39,10 @@ open, and which existing docs in this repo are stale and why.
     actually live *at that time* before assuming this document's plan still
     applies — extensions get renamed/swapped, so re-check rather than trust
     either this note or the original doc blindly.
-  - I have not rewritten `INTEGRATION.md` itself — same reasoning as above,
-    flagging rather than silently rewriting a doc with real planning content
-    in it.
-- **`PORTING-TO-CEP.md`**: already self-marked "Superseded" at the top,
-  pointing to `INTEGRATION.md`. That pointer itself is now stale per the
-  above, but the file already flags itself as not-current, so lower priority.
+  - `INTEGRATION.md` now carries a prominent historical/stale warning at the
+    top; its old plan remains below for reference.
+- **`PORTING-TO-CEP.md`** is explicitly marked historical and directs future
+  work to re-verify the live extension rather than trusting either old plan.
 - **The Insanity Premiere extension work itself lives in a separate repo**
   (`insanity-extension` on GitHub, not this one) — render farm queuing tab,
   self-update mechanism, a GitHub Action that auto-packages updates. None of
@@ -61,7 +50,38 @@ open, and which existing docs in this repo are stale and why.
   pointing at that repo separately — this handoff only covers
   `feg-delivery-app`.
 
-## Recent work this session (verified against real project files)
+## Music cue system update (2026-09-10)
+
+The older inline renderer logic described below has now been replaced by the
+tested `lib/musiccue.js` engine. The app scans every enabled XML audio track,
+hard-excludes the user's shared Sound Effects library by normalized filename,
+discovers project-local SFX folders as cautious secondary exclusions, and
+classifies the remaining clips as likely music or needs-review. The default UI
+shows and selects likely music; uncertain clips remain available through the
+review filter.
+
+Song identity is grouped case-insensitively by title and composer. Overlaps,
+crossfades, stem edits, adjacent cuts, and gaps up to the configurable default
+of five seconds become one cue use; later genuine repeats remain separate. Cue
+cards expose raw filenames and all combined pieces, and hovering a card
+highlights those pieces on an XML-derived audio timeline. Settings expose the
+exclusion directories and merge gap. Cue documents now use correct party labels
+(writer/composer, performer/artist, publisher) and explicitly require human
+rights and timing review.
+
+Regression coverage for this engine is now in `test/verify.js`, including hard
+shared-library exclusion, local-folder safeguards, Premiere filename
+normalization, crossfades/stems/short gaps, and later repeat uses.
+
+The cue review now opens as a dedicated four-step page inside the app instead
+of expanding into the Paperwork stage. It shows the music timeline permanently,
+supports two-way hover matching between timeline pieces and cue rows, and
+spotlights a lane when its audio-track row is hovered. Only WAV and MP3 assets
+can become cue candidates; MP4 embedded audio and every other format are
+counted as skipped. Music cue generation is separate from graphics-log
+generation so one action cannot accidentally regenerate the other.
+
+## Earlier music cue work (historical context)
 
 All of this is in `renderer/index.html`'s music cue sheet builder (`buildMusicCues`,
 `parseES`, and the `#auto-generate` cue-row logic) plus one addition to
@@ -115,8 +135,15 @@ hypothetical bugs.
    — I was not able to find one already sitting in the one real Dropbox
    project folder I searched.
 
+   **2026-09-10 clarification:** production does not normally mute whole tracks;
+   editors disable individual audio/music/SFX clips. Those clip-level
+   `<enabled>FALSE</enabled>` entries are now excluded directly, including
+   inside expanded audio nests, with a regression test. The whole-track caveat
+   above is retained only as historical context and is not a current workflow
+   blocker.
+
 All of the above (items 1–6) are covered by real regression tests — both the
-project's own `test/verify.js` (105/105) and standalone scratch scripts that
+project's own `test/verify.js` (then 130/130) and standalone scratch scripts that
 replayed the exact real filenames from the CL24 documents. Those scratch
 scripts were session-local (in Claude's scratchpad, not this repo) — if
 regression coverage for the cue-sheet logic specifically is wanted going
@@ -127,8 +154,9 @@ deciding whether to add real coverage for `buildMusicCues`/`parseES` there.
 
 ## Open, unresolved, explicitly not guessed at further
 
-1. **Disabled-track exclusion doesn't work on real exports** (see item 7
-   above). Blocked on a real sample XML.
+1. **Whole-track mute representation is unverified on real exports** (see item
+   7 above), but whole-track muting is not used in the stated production
+   workflow. Disabled individual clips are handled and tested.
 2. **A specific real song ("Deep Tunnels.wav") wasn't detected** by the cue
    sheet builder in some real project, reported by the user. Never
    investigated — no root cause found, no fix attempted. Worth checking

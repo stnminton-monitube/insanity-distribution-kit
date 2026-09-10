@@ -1,8 +1,9 @@
 {
-  "name": "media-distribution-toolkit",
-  "productName": "Media Distribution Toolkit",
-  "version": "2.0.0",
-  "description": "Guided QC, mastering, Dropbox filing and Notion tracking for traditional media distribution deliverables",
+  "name": "insanity-distribution-kit",
+  "productName": "Insanity Distribution Kit",
+  "version": "2.1.0",
+  "author": "Insanity Media",
+  "description": "Platform-specific streaming delivery QC, metadata, captions, artwork, compliance and filing",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -21,16 +22,19 @@
     "tesseract.js": "^5.1.1"
   },
   "build": {
-    "appId": "com.austin.mediadistributiontoolkit",
+    "appId": "com.insanity.distributionkit",
+    "icon": "assets/icon.png",
     "asarUnpack": [
       "node_modules/ffmpeg-static/**",
       "node_modules/ffprobe-static/**"
     ],
     "mac": {
+      "icon": "assets/icon.icns",
       "target": "dmg",
       "category": "public.app-category.video"
     },
     "win": {
+      "icon": "assets/icon.png",
       "target": "nsis"
     }
   },

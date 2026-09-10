@@ -10,7 +10,7 @@ verified vs. still open, and known-stale documentation to be aware of.
 
 ## Fast facts
 
-- `npm test` runs `test/verify.js` — 105 checks (syntax, structure, and real
+- `npm test` runs `test/verify.js` — 141 checks (syntax, structure, and real
   functional smoke tests using ffmpeg-generated synthetic media; no fixtures
   in the repo). Run it after touching anything in `lib/` or the renderer's
   inline script.

@@ -1,4 +1,5 @@
-# Superseded
+# Historical — superseded
 
-See INTEGRATION.md — the target is UXP (Insanity panel), not CEP.
-This file was written before inspecting the repo and its assumptions were wrong.
+Neither this early proposal nor the later plan in `INTEGRATION.md` should be
+treated as current architecture. Re-verify the separate `insanity-extension`
+repository and the extension actually loaded by Premiere before porting.

@@ -1,160 +1,117 @@
-# Export Distribution List — THE SPEC OF RECORD
+# Streaming Distribution - Spec of Record
 
-This is Insanity Media's internal delivery standard, derived from the Fox
-Acquisition Delivery Requirements but scoped to what actually applies to our
-shows. **When this document and the original Fox PDF disagree, THIS WINS.**
+The delivery target is the source of truth. Do not merge requirements from
+different platforms into one contradictory preset. The app currently exposes:
 
-Context: the Fox deal is not currently being pursued. These standardized
-exports exist so episodes are ready for any future distribution (TV, streaming).
-The spec is therefore generic — not Fox-specific.
+- **General AVOD / TVOD / SVOD** - the supplied Internal Material Delivery
+  Checklist and 18-column catalog sheet.
+- **Filmhub** - Filmhub's official, current asset requirements, verified on
+  2026-09-09. Re-check the live contract/help center before an actual delivery.
+- **Custom / Contract** - manual gates for a signed specification that has not
+  been encoded as a preset.
 
----
+## Universal episode record - 18 columns
 
-## Video — 3 versions per episode
+Export these columns in this exact order:
 
-1. **Texted Video** (16 embedded audio tracks)
-2. **Textless Video** (graphics present, text removed)
-3. **Textless Video With No Graphics** (fully clean plate)
+1. SERIES NAME // FILM NAME
+2. SEASON #
+3. EPISODE #
+4. EPISODE TITLE
+5. CAST
+6. CREW
+7. SERIES/ VIDEO DESCRIPTION
+8. ORIGINAL PREMIERE DATE
+9. SUBGENRE
+10. RUNTIME
+11. KEYWORDS
+12. COUNTRY OF ORIGIN
+13. VIDEO QUALITY
+14. CLOSED CAPTIONING
+15. IMDB
+16. AD INTEGRATION
+17. CALL TO ACTION
+18. YOUTUBE LINK
 
-### Video specs
-| | |
-|---|---|
-| Codec | ProRes 422 HQ |
-| Wrapper | QuickTime MOV |
-| Resolution | 1920 x 1080 |
-| Display aspect | 16:9 |
-| Pixel aspect | 1:1 |
-| **Frame rate** | **29.97 (house standard — not 23.976/59.94)** |
-| Scan | Progressive |
-| Timecode | Same as source, meets head formatting |
-| Timecode track | Present, meets head formatting |
-| Bit depth | 10-bit |
-| Color sampling | 4:2:2 |
-| Color space | Legal Rec. 709 |
+The app enforces the visible sheet rules: description <=120 characters, at
+least three comma-separated cast names, at least three comma-separated
+keywords, MM/YYYY premiere date, whole-minute runtime, HD/SD, TRUE/FALSE, and
+valid IMDb/YouTube URLs. Exact destination dropdown vocabulary and the IMDb
+distributor listing remain manual checks.
 
-### Head format — ALL THREE videos
-```
-00:58:00:00  Black                         30s
-00:58:30:00  Color bars + 1kHz @ -20dB     30s
-00:59:00:00  Slate                         30s
-00:59:30:00  Black                         30s
-01:00:00:00  PROGRAM START
-```
-Tail formatting per spec. Every video version must match.
+## General AVOD / TVOD / SVOD
 
-### Runtime targets
-- **Half-hour format:** 23–26 minutes
-- **Hour format:** 46–52 minutes
-- **The format is decided per-episode by its actual length**, not chosen in
-  advance — an episode lands in whichever window it falls into. QC reports the
-  classification automatically (`classifyRuntime()` in `lib/checklist.js`).
-- Export at the **longer end** of the range so it's easy to cut down later.
-- The 2s segment blacks count toward runtime — don't land content at the ceiling.
-- Varies by distributor — confirm before locking.
+### Clean video/audio master
 
-### All three video versions carry the full 16 embedded tracks
-Texted, textless, and textless-no-graphics each get the identical 16-track
-audio layout. The audio is the same across versions; only the picture differs.
+- Program only: no broadcast bars, tone, slate, leader, or textless tail.
+- Minimal black at the head/tail.
+- H.264 high-bitrate mezzanine, 1920x1080 progressive, approximately 9 Mbps or
+  higher.
+- AAC audio, 48 kHz, standard bitrate.
+- Keep a ProRes or similar high-quality master on standby.
+- Consistent, human-readable versioned filenames.
 
----
+### Captions
 
-## Audio — 16 embedded mono tracks (one channel per track)
+- SRT or VTT for every episode, synchronized to the final clean program.
+- Human review for accuracy, completeness, sync, spelling, punctuation, and
+  placement.
+- SCC only if a particular destination asks for it.
+- Foreign-language captions/dubs only for an international target.
 
-1. Full Mix Left · 2. Full Mix Right · 3. Full Mix Center
-4. Full Mix LFE · 5. Full Mix Left Surround · 6. Full Mix Right Surround
-7. Full Mix Left Total · 8. Full Mix Right Total
-9. Effects Left · 10. Effects Right
-11. Music Left · 12. Music Right
-13. M&E Left · 14. M&E Right
-15. Narration · 16. Full Mix Mono
+### Artwork
 
-## Audio — 60 sidecar mono WAVs
+- Landscape key art: 1920x1080, with layered source retained.
+- Per-episode thumbnail: 1920x1080.
+- Vertical/poster art: 3150x4200.
+- Square art with title treatment: 1080x1080.
+- Square art without title treatment: 1080x1080.
+- Keep layered working sources for reformatting and localization.
 
-| Stem | Configurations |
-|---|---|
-| Full Mix | 5.1 / 2.0 / 1.0 |
-| M&E | 5.1 / 2.0 |
-| Dialogue | 5.1 / 2.0 / 1.0 |
-| Music | 5.1 / 2.0 |
-| Effects | 5.1 / 2.0 / 1.0 |
-| Mix Minus Narration | 5.1 / 2.0 |
-| Narration | 5.1 / 2.0 / 1.0 |
+### Compliance and operations
 
-### Audio specs
-| | |
-|---|---|
-| Encoding | PCM uncompressed |
-| Wrapper | WAV |
-| Sample rate | 48 kHz |
-| Bit depth | 24-bit |
-| Bit rate | 1152 kbps per mono track |
-| Channels per track | 1 |
-| 2.0 files | separate mono tracks, OR Lt/Rt when derived from the 5.1 master |
-| 5.1 order | L · R · C · LFE · Ls · Rs |
-| Timecode | WAVs match the master's timecode (head/tail padded) |
+- Log frame-accurate ad-break/chapter timecodes per episode.
+- Review baked-in sponsor reads against the target's integrated-ad rules.
+- Review/remove calls to action, hyperlinks, and promotional references that
+  violate the target's rules.
+- Confirm portal/FTP/API method, rights, and E&O/insurance needs before delivery.
 
----
+## Filmhub profile
 
-## Data
+Based on Filmhub's official help center as verified 2026-09-09:
 
-- **SCC** — matched to master timecode + frame rate
-- **CSV timings sheet** — matched to master timecode
+- Clean program only; at most two seconds before/after, starting and ending on
+  at least one black frame.
+- No bars, slate, tone, leader, timecode stream, padding, burned-in full-program
+  captions, watermarks, URLs, promos, release dates, or platform/social links.
+- Preserve native resolution and native supported frame rate. Supported rates:
+  23.976, 24, 25, 29.97, 30, 50, 59.94, and 60.
+- ProRes 422/HQ or DNx preferred. H.264/H.265 requires at least 15 Mbps for HD
+  (50 Mbps for 4K); do not upscale/downscale just to hit a preset.
+- Include a discrete, center-balanced stereo mix. PCM >=48 kHz/16-bit; AAC or
+  MP3 >=128 kbps stereo; AC-3 >=192 kbps stereo.
+- English SDH SRT preferred. SCC is acceptable only when it is the only source;
+  VTT is not accepted.
+- Caption limits checked by the app: <=43 characters/line, <=2 lines/event,
+  0.6-8 seconds/event, >=42 ms gaps, <=25 characters/second.
+- Required title art: 2:3 at >=1400x2100, 3:4 at >=1575x2100, and landscape
+  16:9 at >=1920x1080. Shows additionally require 4:3 at >=1920x1440.
+  Episode/season images and textless 16:9 assets are textless. Filmhub upload
+  art is JPEG/PNG; layered source stays in the internal archive.
+- Chapters/ad breaks are metadata, not content burned into the video. Follow
+  the platform spacing rules and validate them against the final program.
 
----
+## Completion gates
 
-## Documents (19)
+No title is ready until video/audio, captions, artwork, metadata, content
+compliance, naming, rights, and delivery method are reviewed together.
+Machine-readable checks never replace the clearly marked MANUAL watch,
+listen, sync, art-quality, sponsor/CTA, metadata-truth, rights, and upload checks.
 
-| # | Document | Source |
-|---|---|---|
-| 1 | Music Cue Sheet | app draft → review |
-| 2 | Textless Materials Log (timecode + scene desc.) | app draft → review |
-| 3 | Music Licenses | collect (Epidemic certificates) |
-| 4 | **Third Party Licences (graphics, footage)** | app template |
-| 5 | Broadcast Script | app draft from SCC → review |
-| 6 | Segment Timing Sheet | app draft from markers |
-| 7 | Credits | app template |
-| 8 | Cast / Crew | app template |
-| 9 | Synopsis | app template |
-| 10 | Logline | app template |
-| 11 | Lower Thirds Log | app draft → review |
-| 12 | Copyright Line | app template |
-| 13 | Dubbing & Subtitle Restrictions | app template |
-| 14 | Talent Restrictions + Approvals Chart | app template |
-| 15 | Ad/Pub Restrictions | app template |
-| 16 | Placement Declaration | app template |
-| 17 | Tradeout Declaration | app template |
-| 18 | **Title Search Report & Legal Opinion** | ordered from a clearance company |
-| 19 | **Copyright Search Report** | ordered from a clearance company |
+## Advanced and optional tools retained on every episode
 
-### Items 18–19 — what they actually are
-
-Both are **purchased from a clearance vendor** (Clearance Unlimited, Dennis
-Angel, Thomson & Reuters), not authored in the app. The app tracks their status
-and files the received PDFs.
-
-- **Title Search Report & Legal Opinion** — the vendor searches whether the
-  show's *title* is safe to use (conflicting trademarks, other productions with
-  the same name) and a lawyer issues an opinion letter clearing it. Generally
-  per-series rather than per-episode.
-- **Copyright Search Report** — a search of Copyright Office records confirming
-  no one else claims the underlying material and the chain of title is clean,
-  also with a legal opinion.
-
-Two rules that come with them:
-1. **Must be dated within 60 days of the delivery date** — order them late, not
-   early, or they go stale.
-2. **Do not order until the distributor approves the title.** Titles change, and
-   a re-order is a second bill. With no active distribution deal, these stay
-   tracked-but-unordered.
-
-Vendors will often combine both into a single report + opinion — ask for that.
-
----
-
-## Notes on scope
-
-- Feature-only items from the original PDF (billing block, separate main/end
-  credits) **do not apply** — this is episodic.
-- Composer Agreement does not apply while all music is library-licensed
-  (Epidemic). If original score is ever commissioned, it returns.
-- Runtime & Extension Log is an internal working document, not a deliverable.
+The existing paperwork generators, ProRes/broadcast builder, segment timing
+data, textless/clean-plate tools, render-farm automation, 16-track embedding,
+60 WAV sidecars, and SCC utilities remain available. They are **not universal
+requirements**, but they can be opened whenever the operator decides that a
+delivery, archive, or internal workflow needs them.

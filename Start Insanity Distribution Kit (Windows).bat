@@ -1,5 +1,5 @@
 @echo off
-rem Double-click launcher for Media Distribution Toolkit (Windows)
+rem Double-click launcher for Insanity Distribution Kit (Windows)
 cd /d "%~dp0"
 
 where npm >nul 2>nul
@@ -24,5 +24,5 @@ if not exist node_modules (
   )
 )
 
-echo Starting Media Distribution Toolkit...
+echo Starting Insanity Distribution Kit...
 call npm start

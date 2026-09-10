@@ -1,4 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, powerSaveBlocker } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, powerSaveBlocker, Menu } = require('electron');
+
+const APP_NAME = 'Insanity Distribution Kit';
+app.setName(APP_NAME);
 
 // Keep the machine awake during long ffmpeg/AE jobs
 async function keepAwake(job) {
@@ -8,13 +11,16 @@ async function keepAwake(job) {
 }
 const path = require('path');
 const fs = require('fs');
-const { runQC } = require('./lib/qc');
+const { runQC, runProfileQC, runBroadcastSourceQC } = require('./lib/qc');
 const { buildMaster } = require('./lib/build');
 const { CORE, ANCILLARY, STATUSES } = require('./lib/checklist');
 const { STAGES } = require('./lib/stages');
 const { TEMPLATES } = require('./lib/templates');
 const intake = require('./lib/intake');
 const notion = require('./lib/notion');
+const distribution = require('./lib/distribution');
+const { checkCaptions } = require('./lib/captionqc');
+const { checkArtwork } = require('./lib/artwork');
 
 let win;
 
@@ -22,17 +28,60 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1180,
     height: 820,
-    title: 'Media Distribution Toolkit',
+    title: APP_NAME,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  win.webContents.on('will-navigate', event => event.preventDefault());
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 }
 
-app.whenReady().then(createWindow);
+function migrateLegacyStore() {
+  const current = app.getPath('userData');
+  const legacyDirs = ['Media Distribution Toolkit', 'FEG Delivery Toolkit']
+    .map(name => path.join(app.getPath('appData'), name));
+  for (const file of ['feg-projects.json', 'feg-settings.json']) {
+    const to = path.join(current, file);
+    if (fs.existsSync(to)) continue;
+    const from = legacyDirs.map(dir => path.join(dir, file)).find(candidate => fs.existsSync(candidate));
+    if (!from) continue;
+    fs.mkdirSync(current, { recursive: true });
+    fs.copyFileSync(from, to);
+  }
+}
+
+function installApplicationMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: APP_NAME, submenu: [
+      { role: 'about' }, { type: 'separator' }, { role: 'services' },
+      { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' },
+      { role: 'unhide' }, { type: 'separator' }, { role: 'quit' },
+    ] },
+    { label: 'File', submenu: [{ role: 'close' }] },
+    { label: 'Edit', submenu: [
+      { role: 'undo' }, { role: 'redo' }, { type: 'separator' },
+      { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' },
+    ] },
+    { label: 'View', submenu: [
+      { role: 'reload' }, { type: 'separator' }, { role: 'resetZoom' },
+      { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' },
+    ] },
+    { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'front' }] },
+  ]));
+}
+
+app.whenReady().then(() => {
+  migrateLegacyStore();
+  installApplicationMenu();
+  if (process.platform === 'darwin' && app.dock) app.dock.setIcon(path.join(__dirname, 'assets', 'icon.png'));
+  createWindow();
+});
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
@@ -67,14 +116,34 @@ ipcMain.handle('build-master', async (e, opts) => {
 // ---------- Checklist persistence ----------
 const storeFile = () => path.join(app.getPath('userData'), 'feg-projects.json');
 
-ipcMain.handle('checklist-defs', () => ({ CORE, ANCILLARY, STATUSES }));
+function readJson(file, fallback) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return fallback; }
+}
 
-ipcMain.handle('load-projects', () => {
-  try { return JSON.parse(fs.readFileSync(storeFile(), 'utf8')); } catch (e) { return []; }
-});
+function writeJsonAtomic(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(value, null, 2));
+    fs.renameSync(tmp, file);
+  } finally {
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch (e) { /* best effort */ }
+  }
+}
+
+ipcMain.handle('checklist-defs', () => ({ CORE, ANCILLARY, STATUSES }));
+ipcMain.handle('distribution-defs', () => ({
+  fields: distribution.METADATA_FIELDS,
+  subgenres: distribution.SUBGENRES,
+  profiles: distribution.PLATFORM_PROFILES,
+  gates: distribution.GATE_GROUPS,
+}));
+ipcMain.handle('validate-metadata', (_e, record) => distribution.validateMetadata(record));
+
+ipcMain.handle('load-projects', () => readJson(storeFile(), []));
 
 ipcMain.handle('save-projects', (_e, projects) => {
-  fs.writeFileSync(storeFile(), JSON.stringify(projects, null, 2));
+  writeJsonAtomic(storeFile(), projects);
   return true;
 });
 
@@ -88,26 +157,51 @@ ipcMain.handle('pick-directory', async () => {
   return r.canceled ? null : r.filePaths[0];
 });
 
-ipcMain.handle('open-external', (_e, url) => shell.openExternal(url));
+ipcMain.handle('open-external', (_e, url) => {
+  let parsed;
+  try { parsed = new URL(url); } catch (e) { throw new Error('That link is not a valid web address.'); }
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Only http:// and https:// links can be opened.');
+  return shell.openExternal(parsed.toString());
+});
 ipcMain.handle('open-folder', (_e, p) => shell.openPath(p));
 
 // Check a file for a stage, WITHOUT filing it yet
-ipcMain.handle('intake-check', async (_e, { stageId, filePath }) => {
+ipcMain.handle('intake-check', async (_e, { stageId, filePath, platformId }) => {
   const stage = STAGES.find(s => s.id === stageId);
   if (!stage || !stage.intake) throw new Error('This stage does not accept files.');
   const kind = stage.intake.check;
-  if (kind === 'video') return runQC(filePath);
+  if (kind === 'broadcast-source') return runBroadcastSourceQC(filePath);
+  if (kind === 'video') return runProfileQC(filePath, platformId || 'general');
+  if (kind === 'captions') return checkCaptions(filePath, platformId || 'general');
   if (kind === 'wav') return intake.checkWav(filePath);
   if (kind === 'timings') return intake.checkTimings(filePath);
   return intake.checkExt(filePath, stage.intake.accept);
+});
+
+ipcMain.handle('check-artwork', (_e, { filePath, platformId, slotId }) => checkArtwork(filePath, platformId, slotId));
+ipcMain.handle('file-artwork', (_e, { filePath, episodeFolder, slotName }) => {
+  const s = readJson(settingsFile(), {});
+  const safeSlot = String(slotName || 'Artwork').replace(/[\\/:*?"<>|]/g, '-');
+  const dest = intake.fileIt(filePath, episodeFolder, s.distFolderName || 'Distribution', path.join('03 Artwork', safeSlot));
+  return { dest };
+});
+
+ipcMain.handle('export-metadata', (_e, { record, episodeFolder }) => {
+  const issues = distribution.validateMetadata(record);
+  if (issues.some(x => x.level === 'fail')) throw new Error(`Fix ${issues.length} metadata validation issue(s) before export.`);
+  const s = readJson(settingsFile(), {});
+  const destDir = path.join(episodeFolder, s.distFolderName || 'Distribution', '04 Metadata');
+  fs.mkdirSync(destDir, { recursive: true });
+  const dest = require('./lib/filepaths').versionedPath(path.join(destDir, distribution.metadataFilename(record)));
+  fs.writeFileSync(dest, distribution.metadataCsv(record), 'utf8');
+  return { dest, csv: distribution.metadataCsv(record) };
 });
 
 // File it into the episode's Distribution folder
 ipcMain.handle('intake-file', async (_e, { stageId, filePath, episodeFolder }) => {
   const stage = STAGES.find(s => s.id === stageId);
   if (!stage || !stage.intake) throw new Error('This stage does not accept files.');
-  let s = {};
-  try { s = JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch (e) { /* defaults */ }
+  const s = readJson(settingsFile(), {});
   const distName = s.distFolderName || 'Distribution';
   const dest = intake.fileIt(filePath, episodeFolder, distName, stage.intake.sub);
   return { dest, distFolder: path.join(episodeFolder, distName) };
@@ -120,7 +214,10 @@ ipcMain.handle('intake-file', async (_e, { stageId, filePath, episodeFolder }) =
 // something gets filed into it.
 ipcMain.handle('ensure-dist-folders', (_e, { episodeFolder, distName }) => {
   const name = distName || 'Distribution';
-  const subs = [...new Set(STAGES.filter(s => s.intake).map(s => s.intake.sub))];
+  const subs = [...new Set([
+    ...STAGES.filter(s => s.intake).map(s => s.intake.sub),
+    '03 Artwork', '04 Metadata', '05 Compliance',
+  ])];
   for (const sub of subs) fs.mkdirSync(path.join(episodeFolder, name, sub), { recursive: true });
   return { distFolder: path.join(episodeFolder, name), subs };
 });
@@ -132,6 +229,7 @@ ipcMain.handle('notion-set-dropbox-path', async (_e, { pageId, folderPath }) => 
 
 // ---------- Automation: Premiere XML & caption parsing ----------
 const { parseSequenceXML, makeTextlessXML, makeCleanXML } = require('./lib/premxml');
+const musiccue = require('./lib/musiccue');
 ipcMain.handle('make-clean-xml', (_e, { xmlPath, pattern }) => makeCleanXML(xmlPath, pattern));
 const { parseCaptions, retimeCaptionFile } = require('./lib/sccparse');
 ipcMain.handle('retime-captions', (_e, filePath) => retimeCaptionFile(filePath));
@@ -139,6 +237,12 @@ const aepinspect = require('./lib/aepinspect');
 const renderfarm = require('./lib/renderfarm');
 
 ipcMain.handle('parse-sequence-xml', (_e, filePath) => parseSequenceXML(filePath));
+ipcMain.handle('music-cue-defaults', () => ({ exclusionDirs: [musiccue.DEFAULT_SFX_DIR], gapSeconds: 5 }));
+ipcMain.handle('analyze-music-cues', (_e, args) => musiccue.analyzeMusicCues(args.sequence, args.trackIndices, {
+  exclusionDirs: args.exclusionDirs,
+  gapSeconds: args.gapSeconds,
+  episodeFolder: args.episodeFolder,
+}));
 ipcMain.handle('parse-captions', (_e, filePath) => parseCaptions(filePath));
 
 // ---------- Render Farm (queues renders via the centralized render-
@@ -146,9 +250,8 @@ ipcMain.handle('parse-captions', (_e, filePath) => parseCaptions(filePath));
 // not in this app's Settings) ----------
 ipcMain.handle('scan-aeps', (_e, root) => aepinspect.scanAeps(root));
 ipcMain.handle('farm-send-batch', async (e, { aeps, mode, format }) => {
-  let s = {};
-  try { s = JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch (err) { /* defaults */ }
-  return renderfarm.runFarmBatch(aeps, s, mode, format, msg => e.sender.send('farm-progress', msg));
+  const s = readJson(settingsFile(), {});
+  return keepAwake(() => renderfarm.runFarmBatch(aeps, s, mode, format, msg => e.sender.send('farm-progress', msg)));
 });
 ipcMain.handle('farm-cancel-batch', () => { renderfarm.cancelBatch(); return true; });
 ipcMain.handle('make-textless-xml', (_e, { xmlPath, pattern }) => makeTextlessXML(xmlPath, pattern));
@@ -160,7 +263,7 @@ ipcMain.handle('stems-build', async (e, opts) => keepAwake(() => stemforge.build
 ipcMain.handle('stems-embed', async (e, opts) => keepAwake(() => stemforge.embedMaster({ ...opts, onProgress: m => e.sender.send('stem-progress', m) })));
 ipcMain.handle('stems-pad', async (e, opts) => keepAwake(() => stemforge.padStems({ ...opts, onProgress: m => e.sender.send('stem-progress', m) })));
 ipcMain.handle('verify-textless', async (e, opts) => {
-  return verifyTextless({ ...opts, onProgress: msg => e.sender.send('ocr-progress', msg) });
+  return keepAwake(() => verifyTextless({ ...opts, onProgress: msg => e.sender.send('ocr-progress', msg) }));
 });
 
 // Write a plain text file (e.g. generated segment timings CSV) into a Distribution subfolder
@@ -218,19 +321,17 @@ ipcMain.handle('export-doc', async (_e, { html, destDir, filename, header, foote
 // ---------- Settings (Notion token etc.) ----------
 const settingsFile = () => path.join(app.getPath('userData'), 'feg-settings.json');
 
-ipcMain.handle('load-settings', () => {
-  try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')); } catch (e) { return {}; }
-});
+ipcMain.handle('load-settings', () => readJson(settingsFile(), {}));
 
 ipcMain.handle('save-settings', (_e, s) => {
-  fs.writeFileSync(settingsFile(), JSON.stringify(s, null, 2));
+  writeJsonAtomic(settingsFile(), s);
   return true;
 });
 
 // ---------- Notion sync ----------
 function creds() {
   try {
-    const s = JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
+    const s = readJson(settingsFile(), {});
     if (!s.notionToken || !s.notionDb) throw new Error('missing');
     return s;
   } catch (e) {

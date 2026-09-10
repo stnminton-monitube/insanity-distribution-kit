@@ -1,16 +1,14 @@
-# Media Distribution Toolkit — context for Claude Code
+# Insanity Distribution Kit — context for Claude Code
 
-Guided delivery pipeline for episodic TV: QC, mastering, textless generation,
-paperwork drafting, Dropbox filing, Notion tracking. Built for a true-crime
-bodycam documentary series delivering to a traditional broadcast distributor.
+Platform-first delivery pipeline for episodic and standalone streaming titles:
+metadata, clean-master QC, captions, artwork, sponsor/CTA reviews, ad-break logs,
+Dropbox filing, optional Notion tracking, and retained broadcast/archive tools.
 
 ## ⚠️ READ FIRST: `DELIVERABLES.md` is the spec of record
 
-`DELIVERABLES.md` is Insanity Media's internal Export Distribution List — the
-authoritative definition of what ships. It is derived from the original Fox
-Acquisition PDF but scoped to what actually applies to these shows.
-**Where DELIVERABLES.md and the Fox PDF (or §2 below) disagree, DELIVERABLES.md
-wins.** `lib/checklist.js` mirrors it exactly; keep them in sync.
+`DELIVERABLES.md` is the authoritative platform-first definition of what ships.
+The selected target profile wins; never blend General, Filmhub, contract, or
+legacy broadcast values into a single preset.
 
 Current focus: **improving the standalone app** through a live delivery trial.
 A later goal is a Premiere-panel tab — see `INTEGRATION.md` — but that is NOT
@@ -21,7 +19,7 @@ the current task and must not destabilise the working app.
 ## 1. Architecture
 
 ```
-lib/            ← THE ENGINE. 14 modules, pure Node (fs/path/os/child_process).
+lib/            ← THE ENGINE. 21 modules, pure Node (fs/path/os/child_process).
                   ZERO Electron imports. This is what ports to any host.
 main.js         ← Electron shell: IPC handlers, dialogs, PDF export, keepAwake.
                   Thin wrapper — replace when porting.
@@ -39,9 +37,14 @@ re-pointed at whatever the host provides (in CEP with Node enabled, they can
 | Module | Does |
 |---|---|
 | `qc.js` | ffprobe-based spec validation → pass/warn/fail rows |
+| `streamqc.js` | clean-program QC driven by the selected platform profile |
+| `distribution.js` | 18 metadata columns, validation, CSV, profiles, gates |
+| `captionqc.js` | SRT/VTT/SCC platform and caption-quality checks |
+| `artwork.js` | artwork format, dimension, aspect-ratio, source checks |
 | `build.js` | Broadcast master: bars/tone/slate/black head, TC 00:58:00:00 |
 | `stemforge.js` | 5 stems → 60-file spec grid; embeds 16 tracks; pads sidecars |
 | `premxml.js` | Premiere FCP XML parse, textless/clean XML rewrite, nested harvest |
+| `musiccue.js` | Music-candidate scoring, SFX exclusions, edit grouping, cue timeline data |
 | `sccparse.js` | SCC (CEA-608) + SRT parse; ±1hr retime |
 | `aepinspect.js` | Local AE: find AEPs, disable text layers + save a `_TEXTLESS` copy |
 | `renderfarm.js` | Queues renders on the user's own Notion/Dropbox render farm |
@@ -49,20 +52,26 @@ re-pointed at whatever the host provides (in CEP with Node enabled, they can
 | `intake.js` | WAV/timings/extension checks + versioned filing into Dropbox |
 | `notion.js` | Notion API: list/update episodes, push QC results |
 | `templates.js` | 14 document templates (cue sheet, logs, declarations…) |
-| `stages.js` | 10 workflow stages + their explanatory content |
-| `guide.js` | 24-step Guided Mode runbook, each with an inline SVG diagram |
+| `stages.js` | 7 required platform stages + 7 optional advanced/contract tools |
+| `guide.js` | 8-step platform-first Guided Mode with inline SVG diagrams |
 | `checklist.js` | Deliverables checklist definitions |
 | `ffbin.js` | Resolves bundled ffmpeg/ffprobe paths (asar-aware) |
+| `filepaths.js` | Shared never-overwrite output versioning |
 
 ---
 
-## 2. Delivery spec (background — `DELIVERABLES.md` overrides this)
+## 2. Legacy broadcast/archive subsystem (optional)
+
+**The technical details in this section are not the default delivery spec.**
+They document retained tooling for a buyer or archive policy that explicitly
+requests broadcast leaders, ProRes, textless variants, 16 tracks, stems, or SCC.
+For normal work, follow the selected profile and `DELIVERABLES.md`.
 
 **Video master:** QuickTime MOV · ProRes 422 HQ @1920x1080 · 16:9 · square
 pixels · progressive · **29.97 house standard** · 10-bit 4:2:2 · Legal Rec.709.
-(The wider spec also permits 23.976/59.94 and UHD ProRes 4444 XQ; the app warns
-rather than fails on those. Three video versions ship per episode: texted,
-textless, and textless-with-no-graphics.)
+(This retained legacy checker enforces exact HD/29.97. It is not used by the
+General or Filmhub streaming profiles. Textless variants are optional unless a
+specific target asks for them.)
 
 **Runtime:** half-hour 23–26 min · hour 46–52 min. Export at the LONG end so
 trims are easy. Varies by distributor — confirm before locking.
@@ -112,9 +121,8 @@ L/R with surrounds at −6dB and LFE low-passed at 80Hz.
 Where text sits on a graphic, BOTH a textless-graphic version AND a fully clean
 (no graphic) version are required.
 
-**Captions:** SCC (CEA-608) required, pop-on, UTF-8, timed to master TC.
-**Rejections:** ZIP delivery · wrong naming · missing textless · ads · burned-in
-captions · QuickTime edit lists.
+**Legacy captions:** SCC (CEA-608), pop-on, UTF-8, timed to master TC, only
+when a target specifically requests the broadcast package.
 
 **Unscripted allowance:** M&E may be "Optional" (not fully filled) when that's
 the best available — relevant because bodycam dialogue and ambience are
