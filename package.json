@@ -1,7 +1,7 @@
 {
   "name": "insanity-distribution-kit",
   "productName": "Insanity Distribution Kit",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "author": "Insanity Media",
   "description": "Platform-specific streaming delivery QC, metadata, captions, artwork, compliance and filing",
   "main": "main.js",

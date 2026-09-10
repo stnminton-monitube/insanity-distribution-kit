@@ -36,6 +36,7 @@
   header .crumb { color: var(--dim); font-size: 13px; }
   header .spacer { flex: 1; }
   main { padding: 28px 26px 52px; max-width: 1120px; margin: 0 auto; }
+  main:has(#view-cues.active) { max-width:none; }
   .view { display: none; } .view.active { display: block; }
   .card { background: linear-gradient(180deg,color-mix(in srgb,var(--panel) 96%,#fff 4%),var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 21px; margin-bottom: 16px; }
   .btn { min-height:36px; background: linear-gradient(180deg,#6a9cff,var(--accent)); border: 1px solid color-mix(in srgb,var(--accent) 78%,#fff); color: #fff; padding: 8px 16px; border-radius: 9px; cursor: pointer; font-size: 13.5px; font-weight:600; box-shadow:0 4px 12px rgba(48,102,210,.22); }
@@ -125,8 +126,18 @@
   .cue-step b { display:grid; place-items:center; flex:0 0 23px; height:23px; border-radius:50%; background:var(--panel2); color:var(--text); }
   .cue-step.active { border-color:color-mix(in srgb,var(--accent) 65%,var(--line)); background:var(--accent-soft); color:var(--text); }
   .cue-format-note { padding:10px 12px; border-radius:9px; background:color-mix(in srgb,var(--accent) 8%,var(--panel2)); border-left:3px solid var(--accent); }
-  .cue-workspace { display:grid; grid-template-columns:minmax(230px,280px) minmax(0,1fr); gap:14px; align-items:start; }
-  .cue-sidebar { position:sticky; top:82px; }
+  #view-cues { width:100%; }
+  .cue-workspace { display:block; }
+  .cue-track-drawer { padding:0; overflow:hidden; }
+  .cue-track-drawer > summary { cursor:pointer; display:flex; align-items:center; gap:10px; padding:13px 16px; color:var(--text); font-weight:650; list-style:none; }
+  .cue-track-drawer > summary::-webkit-details-marker { display:none; }
+  .cue-track-drawer > summary::before { content:"›"; color:var(--accent); font-size:20px; line-height:1; transition:transform .14s ease; }
+  .cue-track-drawer[open] > summary::before { transform:rotate(90deg); }
+  .cue-track-drawer > summary .muted { margin-left:auto; font-weight:400; }
+  .cue-track-body { padding:0 16px 15px; border-top:1px solid var(--line); }
+  #auto-atracks { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:2px 16px; max-height:220px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:8px 5px 4px 0; }
+  .cue-review-card { min-width:0; height:max(570px,calc(100vh - 310px)); overflow:hidden; display:flex; flex-direction:column; }
+  #auto-songs { display:flex; flex:1; min-height:0; flex-direction:column; }
   .cue-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin:0 0 14px; }
   .cue-metric { padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); }
   .cue-metric b { display:block; font:700 18px/1.2 var(--font-mono); }
@@ -138,7 +149,7 @@
   .cue-controls { display:flex; gap:7px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
   .cue-controls input { width:240px; }
   .cue-controls select { width:145px; }
-  .cue-list { max-height:560px; overflow-y:auto; margin-top:10px; padding-right:4px; }
+  .cue-list { flex:1; min-height:160px; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; margin-top:10px; padding:1px 5px 1px 1px; }
   .cue-card { display:grid; grid-template-columns:auto 1fr auto; gap:11px; align-items:start; padding:12px 13px; margin-bottom:8px; border:1px solid var(--line); border-radius:10px; background:var(--panel2); }
   .cue-card:hover, .cue-card.active { border-color:color-mix(in srgb,var(--accent) 75%,var(--line)); background:color-mix(in srgb,var(--accent) 8%,var(--panel2)); }
   .cue-card input[type=checkbox] { margin-top:4px; accent-color:var(--accent); }
@@ -148,7 +159,7 @@
   .cue-files summary { cursor:pointer; }
   .cue-time { text-align:right; font:12px/1.45 var(--font-mono); color:var(--dim); white-space:nowrap; }
   .cue-empty { padding:22px; text-align:center; color:var(--dim); border:1px dashed var(--line); border-radius:10px; }
-  .cue-timeline { display:block; margin:12px 0 16px; padding:12px; border:1px solid var(--line); border-radius:11px; background:#121720; overflow-x:auto; }
+  .cue-timeline { display:block; flex:0 1 310px; min-height:190px; margin:12px 0; padding:12px; border:1px solid var(--line); border-radius:11px; background:#121720; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
   .tl-ruler { position:relative; height:23px; margin-left:126px; border-bottom:1px solid var(--line); color:var(--dim); font:10px var(--font-mono); }
   .tl-ruler span { position:absolute; top:0; transform:translateX(-50%); }
   .tl-ruler span:first-child { transform:none; }
@@ -164,8 +175,11 @@
   @media (max-width: 760px) {
     .field-grid, .grid2 { grid-template-columns: 1fr; }
     .cue-steps { grid-template-columns:repeat(2,1fr); }
-    .cue-workspace { grid-template-columns:1fr; }
-    .cue-sidebar { position:static; }
+    #auto-atracks { grid-template-columns:1fr; }
+    #view-cues { width:100%; }
+    .cue-review-card { height:auto; max-height:none; }
+    #auto-atracks, .cue-list { flex:none; max-height:420px; }
+    .cue-timeline { flex:none; max-height:320px; }
     .cue-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .cue-review-head { align-items:stretch; flex-direction:column; }
     .cue-controls { justify-content:flex-start; }
@@ -480,18 +494,20 @@
   <div id="cue-workspace" style="display:none">
     <div class="cue-summary" id="auto-cue-summary"></div>
     <div class="cue-workspace">
-      <aside class="card cue-sidebar">
-        <h2 class="section" style="margin-top:0">Tracks being scanned</h2>
-        <p class="muted">Every enabled audio track starts on. Turn off a dialogue-only track if needed. Hover a row to spotlight that lane.</p>
-        <div id="auto-atracks" style="margin-top:12px"></div>
-        <div class="cue-format-note muted" style="margin-top:14px">This list does not mean every clip is music. It only controls where the app looks.</div>
-      </aside>
-      <div class="card">
-        <div class="row"><div><h2 class="section" style="margin:0">Music timeline and cue review</h2><p class="muted">Hover either a cue or a blue timeline clip to find the matching pieces.</p></div><span class="spacer" style="flex:1"></span><span class="chip" id="cue-sequence-name"></span></div></div>
+      <details class="card cue-track-drawer">
+        <summary><span>Track filters</span><span class="muted">Optional — all enabled audio tracks are scanned</span></summary>
+        <div class="cue-track-body">
+          <p class="muted" style="margin-top:10px">Turn off a dialogue-only track if it creates noise in the results. Hover a track to spotlight its timeline lane.</p>
+          <div id="auto-atracks"></div>
+          <div class="cue-format-note muted" style="margin-top:10px">These switches only control where the app looks. They do not automatically label every clip on a track as music.</div>
+        </div>
+      </details>
+      <div class="card cue-review-card">
+        <div class="row"><div><h2 class="section" style="margin:0">Music timeline and potential cues</h2><p class="muted">The timeline spans the workspace. Select only the music that belongs in the cue sheet.</p></div><span class="spacer" style="flex:1"></span><span class="chip" id="cue-sequence-name"></span></div></div>
         <div id="auto-songs"></div>
         <div class="row" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
-          <button class="btn" id="cue-generate">Create Music Cue Sheet draft</button>
-          <span class="muted" id="cue-gen-status">Checked cues will be copied into the editable cue sheet.</span>
+          <button class="btn" id="cue-generate">Build cue sheet from selected music →</button>
+          <span class="muted" id="cue-gen-status">You will not leave this review screen until you press Build.</span>
         </div>
       </div>
     </div>
@@ -1625,7 +1641,7 @@ function renderSongChecklist() {
   $('#auto-songs').innerHTML =
     `<div class="cue-review-head"><div><b>Music timeline</b><div class="muted">Only WAV/MP3 candidates appear. Hover a cue or timeline block to find the matching pieces.</div></div>
       <div class="cue-controls"><input type="text" id="cue-search" placeholder="Search title or filename"><select id="cue-filter"><option value="all">All candidates</option><option value="likely">Likely music</option><option value="review">Needs review</option></select><button class="btn secondary small" id="song-likely">Select likely</button><button class="btn secondary small" id="song-none">Clear</button></div></div>
-      <div class="cue-timeline open" id="cue-timeline"><div class="tl-ruler">${ruler}</div>${timeline}</div><div class="muted" style="margin:4px 0 9px"><b>Include</b> the rows that belong on the cue sheet. One row may combine several adjacent cuts or crossfades of the same song.</div>${rowsHtml}`;
+      <div class="cue-timeline open" id="cue-timeline"><div class="tl-ruler">${ruler}</div>${timeline}</div><div class="muted" style="margin:4px 0 9px"><b>Include</b> the rows that belong on the cue sheet. One row may combine several adjacent cuts or crossfades of the same song.</div><div class="cue-list" id="cue-list">${rowsHtml}</div>`;
 
   const updateReview = () => {
     const q = ($('#cue-search').value || '').trim().toLowerCase();
@@ -1666,10 +1682,10 @@ function renderSongChecklist() {
     const trackIndex = row.dataset.trackRow;
     row.onmouseenter = () => document.querySelectorAll('[data-timeline-track]').forEach(lane => {
       lane.classList.toggle('active-track', lane.dataset.timelineTrack === trackIndex);
-      lane.classList.toggle('dim-track', lane.dataset.timelineTrack !== trackIndex);
+      lane.classList.toggle('dimmed-track', lane.dataset.timelineTrack !== trackIndex);
     });
     row.onmouseleave = () => document.querySelectorAll('[data-timeline-track]').forEach(lane =>
-      lane.classList.remove('active-track', 'dim-track'));
+        lane.classList.remove('active-track', 'dimmed-track'));
   });
   updateReview();
 }
